@@ -2,12 +2,13 @@
 name = "squamish"
 version = "0.1.0"
 description = ""
-authors = ["Lukas Pfannschmidt <mirek.1337@gmail.com>"]
+authors = ["Lukas Pfannschmidt <lukas@lpfann.me>"]
 
 [tool.poetry.dependencies]
 python = "^3.6"
 
 [tool.poetry.dev-dependencies]
+pytest = "^5.1.2"
 
 [build-system]
 requires = ["poetry>=0.12"]

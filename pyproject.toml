@@ -8,6 +8,7 @@ authors = ["Lukas Pfannschmidt <lukas@lpfann.me>"]
 python = "^3.6"
 scikit-learn = "^0.21.3"
 Boruta = "^0.3"
+hypothesis-auto = "^1.0.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.1.2"

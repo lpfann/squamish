@@ -1,4 +1,6 @@
 from unittest import TestCase
+
+from hypothesis_auto import auto_test_module
 from sklearn.datasets import make_classification
 import pytest
 

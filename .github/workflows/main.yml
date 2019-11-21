@@ -10,12 +10,12 @@ jobs:
     - name: Install
       uses: abatilo/actions-poetry@v1.1.0
       with:
-        python_version: 3.6
+        python_version: 3.6.9
         poetry_version: 1.0.0b6
         args: install --no-dev
     - name: Run pytest
       uses: abatilo/actions-poetry@v1.1.0
       with:
-        python_version: 3.6
+        python_version: 3.6.9
         poetry_version: 1.0.0b6
         args: run python -m pytest --cov=src --cov-branch --cov-fail-under=100 tests/

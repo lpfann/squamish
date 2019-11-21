@@ -17,16 +17,20 @@ def data():
         n_clusters_per_class=2,
         flip_y=0,
         shuffle=False,
+        random_state=123,
     )
     return X, y
 
 
-def test__get_support_mask():
-    pytest.fail()
+@pytest.fixture(scope="module")
+def model():
+    return Main()
 
 
-def test_fit(data):
+def test_fit(data, model):
     X, y = data
     assert len(X) == len(y)
 
-    pytest.fail()
+    model.fit(X, y)
+    assert model.rel_classes is not None
+    assert len(model._get_support_mask()) == X.shape[1]

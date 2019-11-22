@@ -6,6 +6,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import f1_score, precision_score, recall_score
 from sklearn.model_selection import ParameterGrid, cross_val_score
 from sklearn.preprocessing import scale
+from sklearn.feature_selection import mutual_info_classif, mutual_info_regression
 
 import boruta
 from boruta import BorutaPy
@@ -123,3 +124,12 @@ def sort_features(X, y, MR, AR, params_rf=None, params_boost=None):
             print(f"W")
             W.append(f)
     return S, W
+
+
+def mutual_information(X, y, n_neighbors=50, problem="classification"):
+    if problem is "classification":
+        method = mutual_info_classif
+    else:
+        method = mutual_info_regression
+
+    return method(X, y, n_neighbors=n_neighbors)

@@ -5,6 +5,7 @@ from sklearn.datasets import make_classification
 import pytest
 
 from squamish.main import Main
+import matplotlib as mpl
 
 
 @pytest.fixture
@@ -32,5 +33,8 @@ def test_fit(data, model):
     assert len(X) == len(y)
 
     model.fit(X, y)
-    assert model.rel_classes is not None
+    assert model.relevance_classes_ is not None
     assert len(model._get_support_mask()) == X.shape[1]
+
+    assert model.feature_importances_[0] > 0
+    assert type(model.plot()) is mpl.figure.Figure

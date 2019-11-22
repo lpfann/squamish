@@ -61,6 +61,7 @@ def get_MR(X, y, params=None):
 
 
 def get_AR_params(X, y, params):
+    print(params)
     tree_params = {k: v for k, v in params.items() if not k.startswith("b_")}
     boruta_params = {k[2:]: v for k, v in params.items() if k.startswith("b_")}
 
@@ -121,15 +122,4 @@ def sort_features(X, y, MR, AR, params_rf=None, params_boost=None):
         else:
             print(f"W")
             W.append(f)
-    return create_support_AR(X.shape[1], S, W)
-
-
-def get_ar_classes(X, y, params_rf, params_boost):
-
-    AR = np.where(get_AR_params(X, y, params_rf))[0]
-    MR, score = get_MR(X, y, params_boost)
-
-    print(f"Features from Boruta:\n {AR}")
-    print(f"Features from Lightbgm:\n {MR}")
-
-    return sort_features(X, y, MR, AR, params_rf, params_boost)
+    return S, W

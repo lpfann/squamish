@@ -11,6 +11,15 @@ import matplotlib.cm as cm
 color_palette_3 = cm.Set1([0, 1, 2], alpha=0.8)
 
 
+def get_colors(N, classes=None):
+    if classes is None:
+        new_classes = np.zeros(N).astype(int)
+        color = [color_palette_3[c.astype(int)] for c in new_classes]
+    else:
+        color = [color_palette_3[c.astype(int)] for c in classes]
+    return color
+
+
 def plot_bars(
     ax, importances, ticklabels=None, classes=None, numbering=True, tick_rotation=30
 ):
@@ -50,11 +59,7 @@ def plot_bars(
     height = importances
 
     # Bar colors
-    if classes is None:
-        new_classes = np.zeros(N).astype(int)
-        color = [color_palette_3[c.astype(int)] for c in new_classes]
-    else:
-        color = [color_palette_3[c.astype(int)] for c in classes]
+    color = get_colors(N, classes)
 
     # Plot the bars
     bars = ax.bar(

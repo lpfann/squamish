@@ -86,21 +86,25 @@ def cv_score(X, y, model, cv=20):
     return np.mean(cross_val_score(model, X, y, cv=cv))
 
 
-def train_and_score(X, y, params=None):
-    rf = RF(X, y, params)
-    return cv_score(X, y, rf)
-
-
-def score_with_feature_set(X, y, featureset, params=None):
+def reduced_data(X, featureset):
     featureset = np.ravel(featureset).astype(int)
-    return train_and_score(X[:, featureset], y, params)
+    return X[:, featureset]
+
+
+def score_with_feature_set(X, y, featureset, params=None, imps=False):
+    X = reduced_data(X, featureset)
+    rf = RF(X, y, params)
+    score = cv_score(X, y, rf)
+    if imps == False:
+        return score
+    else:
+        return score, rf.feature_importances_
 
 
 def sort_features(X, y, MR, AR, params_rf=None, params_boost=None):
     S = []
     W = list(np.setdiff1d(AR, MR))
     print(f"predetermined weakly {W}")
-
     score_on_MR = score_with_feature_set(X, y, MR, params_boost)
     score_on_AR = score_with_feature_set(X, y, AR, params_boost)
     MR_and_W = np.union1d(MR, W)
@@ -109,12 +113,21 @@ def sort_features(X, y, MR, AR, params_rf=None, params_boost=None):
     for k, sc in scores.items():
         print(f"{k} has score {sc}")
 
-    for f in MR:
+    diffs = np.zeros(len(MR))
+    imps = np.zeros((len(MR), X.shape[1]))
+
+    for i, f in enumerate(MR):
 
         C = np.setdiff1d(MR, f)  # Remove f from minimal set
         C = np.union1d(C, W)  # Combine with weakly relevant features
+        C = np.sort(C).astype(int)
 
-        score_c = score_with_feature_set(X, y, C, params_boost)
+        print(C)
+        score_c, imps_c = score_with_feature_set(X, y, C, params_boost, imps=True)
+        imps[i,C] = imps_c
+        imps[i,i] = np.median(imps_c) # Replace current importance for feature f with median as neutral element
+        diffs[i] = score_on_MR_and_W - score_c # Record score when f is missing
+
         print(f"score without {f} is {score_c:.3}-> ", end="")
 
         if score_c < score_on_MR_and_W:
@@ -123,7 +136,7 @@ def sort_features(X, y, MR, AR, params_rf=None, params_boost=None):
         else:
             print(f"W")
             W.append(f)
-    return S, W
+    return S, W, diffs, imps
 
 
 def mutual_information(X, y, n_neighbors=50, problem="classification"):
@@ -133,3 +146,18 @@ def mutual_information(X, y, n_neighbors=50, problem="classification"):
         method = mutual_info_regression
 
     return method(X, y, n_neighbors=n_neighbors)
+
+def compute_importances(recorded_importances):
+    mins,median,maxs = np.percentile(recorded_importances,[0,50,100],axis=0)
+    return mins, median, maxs
+
+def emulate_intervals(recorded_importances):
+    _,median,_ = compute_importances(recorded_importances)
+    deviation = np.std(recorded_importances,axis=0)
+
+    upper_bounds = median+deviation
+    lower_bounds = median-deviation
+    interval = np.zeros((len(median),2))
+    for i in range(len(median)):
+        interval[i] = lower_bounds[i],upper_bounds[i]
+    return interval

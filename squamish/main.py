@@ -7,47 +7,17 @@ from sklearn.feature_selection.base import SelectorMixin
 from sklearn.model_selection import ParameterGrid
 from sklearn.preprocessing import scale
 
-from squamish.utils import create_support_AR, get_AR_params, get_MR, sort_features
-
+from squamish.utils import create_support_AR
+from squamish.algorithm import sort_features
+import squamish.models as models
 from . import utils, plot
-
-BEST_PARAMS_BORUTA = {
-    "max_depth": [5],
-    "boosting_type": ["rf"],
-    "bagging_fraction": [0.632],
-    "bagging_freq": [1],
-    "feature_fraction": [0.1],
-    "b_perc": [100],
-    "b_n_estimators": ["auto"],
-    "b_alpha": [0.01],
-    "b_max_iter": [50],
-    "importance_type": ["gain"],
-}
-BEST_PARAMS_BORUTA = ParameterGrid(BEST_PARAMS_BORUTA)[0]
-
-BEST_PARAMS_ITER = {"boosting_type": ["gbdt"]}
-BEST_PARAMS_ITER = ParameterGrid(BEST_PARAMS_ITER)[0]
-
 
 class Main(BaseEstimator, SelectorMixin):
 
     def __init__(
-        self, problem="classification", params_boruta=None, params_iterative=None, importances="gain"
+        self, problem="classification", params_boruta=None, params_iterative=None, 
     ):
         self.problem = problem
-        if params_boruta is not None:
-            self.params_boruta = BEST_PARAMS_BORUTA.update(params_boruta)
-        else:
-            self.params_boruta = BEST_PARAMS_BORUTA
-
-        if params_iterative is not None:
-            self.params_iter = BEST_PARAMS_ITER.update(params_iterative)
-        else:
-            self.params_iter = BEST_PARAMS_ITER
-        if importances in ["gain","mi"]:
-            self.importances = importances
-        else:
-            print("Unknown 'importance' parameter. Try one of ['gain','mi'].")
 
     def _get_support_mask(self):
         return self.support_
@@ -56,14 +26,14 @@ class Main(BaseEstimator, SelectorMixin):
         X = scale(X)
         n, d = X.shape
 
-        AR = np.where(get_AR_params(X, y, self.params_boruta))[0]
-        MR, self.score_ = get_MR(X, y, self.params_iter)
+        AR, bor_score= models.fset_and_score(models.MyBoruta,X,y)
+        MR, self.score_ = models.fset_and_score(models.RF,X,y)
 
         print(f"Features from Boruta:\n {AR}")
-        print(f"Features from Lightbgm:\n {MR}")
+        print(f"Features from RF:\n {MR}")
 
         # Sort features iteratively into strongly (S) and weakly (W) sets
-        S, W, score_diffs, importances  = sort_features(X, y, MR, AR, self.params_boruta, self.params_iter)
+        S, W, score_diffs, importances  = sort_features(X, y, MR, AR)
         self.raw_importances_ = importances
         self.feature_score_differences_ = score_diffs
 
@@ -74,11 +44,8 @@ class Main(BaseEstimator, SelectorMixin):
 
         # Simple boolean vector where relevan features are regarded as one set (1 relevant, 0 irrelevant)
         self.support_ = self.relevance_classes_ > 0
-        if self.importances is "gain":
-            self.feature_importances_ = utils.compute_importances(importances)[1] # Take mean
-            self.interval_ = utils.emulate_intervals(importances)
-        else:
-            self.feature_importances_ = utils.mutual_information(X, y, problem=self.problem)
+        self.feature_importances_ = utils.compute_importances(importances)[1] # Take mean
+        self.interval_ = utils.emulate_intervals(importances)
 
     def plot(self, ticklabels=None):
         return plot.plot_model_intervals(self, ticklabels=ticklabels)

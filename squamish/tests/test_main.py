@@ -35,6 +35,3 @@ def test_fit(data, model):
     model.fit(X, y)
     assert model.relevance_classes_ is not None
     assert len(model._get_support_mask()) == X.shape[1]
-
-    assert model.feature_importances_[0] > 0
-    assert type(model.plot()) is mpl.figure.Figure

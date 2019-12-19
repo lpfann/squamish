@@ -50,6 +50,7 @@ class RF(Model):
         "bagging_freq": 1,
         "feature_fraction": 0.5,
         "importance_type": "gain",
+        "verbose": 0,
     }
 
     def __init__(self, params=None):
@@ -80,9 +81,11 @@ class MyBoruta(Model):
         "bagging_freq": 1,
         "feature_fraction": 0.2,
         "b_perc": 100,
+        "verbose": 0,
+        "verbose_eval": False,
         "b_n_estimators": "auto",
         "b_alpha": 0.01,
-        "b_max_iter": 50,
+        "b_max_iter": 100,
         "importance_type": "gain",
     }
 

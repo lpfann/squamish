@@ -79,7 +79,7 @@ class MyBoruta(Model):
         "boosting_type": "rf",
         "bagging_fraction": 0.632,
         "bagging_freq": 1,
-        "feature_fraction": 0.2,
+        "feature_fraction": 0.1,
         "b_perc": 100,
         "verbose": 0,
         "verbose_eval": False,

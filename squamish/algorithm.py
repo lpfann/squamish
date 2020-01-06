@@ -11,7 +11,8 @@ from sklearn.preprocessing import scale
 from sklearn.feature_selection import mutual_info_classif, mutual_info_regression
 import squamish.utils
 from scipy import stats
-
+from squamish.stat import get_significance_bounds
+from squamish.utils import reduced_data
 
 def remove_F(f, MR, W):
     C = np.setdiff1d(MR, f)  # Remove f from minimal set
@@ -37,27 +38,34 @@ def sort_features(X, y, MR, AR):
     for k, sc in scores.items():
         print(f"{k} has score {sc}")
 
+
+    # Get Statistic
+    X_allinformative = reduced_data(X, MR_and_W)
+    X_allinformative = scale(X_allinformative)
+    sig_bounds = get_significance_bounds(model,X_allinformative,y)
+    print(f"sig bounds: {sig_bounds}")
     diffs = np.zeros(len(MR))
     imps = np.zeros((len(MR), X.shape[1]))
     for i, f in enumerate(MR):
         # Remove feature f from MR u W
-        C = remove_F(f, MR, W)
-        print(C)
+        fset_without_f = remove_F(f, MR, W)
+        print(fset_without_f)
         # check score if f is removed
-        score_c = model.redscore(X, y, C)
+        score_without_f = model.redscore(X, y, fset_without_f)
 
         # imps[i,C] = imps_c
         # imps[i,i] = np.median(imps_c) # Replace current importance for feature f with median as neutral element
-        diffs[i] = score_on_MR_and_W - score_c  # Record score when f is missing
+        diffs[i] = score_on_MR_and_W - score_without_f  # Record score when f is missing
 
-        print(f"score without {f} is {score_c:.3}-> ", end="")
+        print(f"score without {f} is {score_without_f:.3}-> ", end="")
 
-        # TEST
-        if score_c < score_on_MR_and_W:
-            print(f"S")
-            S.append(f)
-        else:
+        # Test if value lies in acceptance range of null distribution 
+        # i.e. no signif. change compared to perm. feature
+        if sig_bounds[0] <= score_without_f <= sig_bounds[1]:
             print(f"W")
             W.append(f)
+        else:
+            print(f"S")
+            S.append(f)
 
     return S, W, diffs, imps

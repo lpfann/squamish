@@ -42,7 +42,7 @@ def _perm_scores(model, X, y, n_resampling):
         yield model.score(X_NF, y)
 
 
-def get_significance_bounds(model, X, y, n_resampling=5, fpr=1e-4):
+def get_significance_bounds(model, X, y, n_resampling=50, fpr=1e-4):
     scores = _perm_scores(model, X, y, n_resampling)
     scores = list(scores)
 

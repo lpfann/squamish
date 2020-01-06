@@ -14,6 +14,7 @@ boruta = {git = "https://github.com/lpfann/boruta_py", rev = "fix_lightgbm_rs"}
 pytest = "^5.1.2"
 seaborn = "^0.9.0"
 jupytext = "^1.3.0"
+scipy = "^1.4.1"
 
 [tool.poetry.dev-dependencies]
 jupyter = "^1.0.0"

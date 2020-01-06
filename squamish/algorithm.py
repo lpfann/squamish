@@ -9,12 +9,16 @@ from sklearn.metrics import f1_score, precision_score, recall_score
 from sklearn.model_selection import ParameterGrid, cross_val_score
 from sklearn.preprocessing import scale
 from sklearn.feature_selection import mutual_info_classif, mutual_info_regression
+import squamish.utils
+from scipy import stats
 
-def remove_F(f,MR,W):
-        C = np.setdiff1d(MR, f)  # Remove f from minimal set
-        C = np.union1d(C, W)  # Combine with weakly relevant features
-        C = np.sort(C).astype(int)
-        return C
+
+def remove_F(f, MR, W):
+    C = np.setdiff1d(MR, f)  # Remove f from minimal set
+    C = np.union1d(C, W)  # Combine with weakly relevant features
+    C = np.sort(C).astype(int)
+    return C
+
 
 def sort_features(X, y, MR, AR):
 
@@ -22,11 +26,14 @@ def sort_features(X, y, MR, AR):
     W = list(np.setdiff1d(AR, MR))
     MR_and_W = np.union1d(MR, W)
     print(f"predetermined weakly {W}")
+
     model = RF()
+
     score_on_MR = model.redscore(X, y, MR)
     score_on_AR = model.redscore(X, y, AR)
     score_on_MR_and_W = model.redscore(X, y, MR_and_W)
     scores = {"MR": score_on_MR, "AR": score_on_AR, "MR+W": score_on_MR_and_W}
+
     for k, sc in scores.items():
         print(f"{k} has score {sc}")
 
@@ -34,14 +41,14 @@ def sort_features(X, y, MR, AR):
     imps = np.zeros((len(MR), X.shape[1]))
     for i, f in enumerate(MR):
         # Remove feature f from MR u W
-        C = remove_F(f,MR,W)
+        C = remove_F(f, MR, W)
         print(C)
         # check score if f is removed
         score_c = model.redscore(X, y, C)
 
-        #imps[i,C] = imps_c
-        #imps[i,i] = np.median(imps_c) # Replace current importance for feature f with median as neutral element
-        diffs[i] = score_on_MR_and_W - score_c # Record score when f is missing
+        # imps[i,C] = imps_c
+        # imps[i,i] = np.median(imps_c) # Replace current importance for feature f with median as neutral element
+        diffs[i] = score_on_MR_and_W - score_c  # Record score when f is missing
 
         print(f"score without {f} is {score_c:.3}-> ", end="")
 

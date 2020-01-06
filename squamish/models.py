@@ -30,6 +30,9 @@ class Model:
         return self
 
     def score(self, X, y, cv=5):
+        return self.estimator.score(X, y)
+
+    def cvscore(self, X, y, cv=5):
         return np.mean(cross_val_score(self.estimator, X, y, cv=cv))
 
     def fset(self, X, y):
@@ -70,7 +73,7 @@ class RF(Model):
         X_c = reduced_data(X, c)
         X_c = scale(X_c)
         self.estimator.fit(X_c, y)
-        return self.estimator.score(X_c, y)
+        return self.score(X_c, y)
 
 
 class MyBoruta(Model):
@@ -114,14 +117,14 @@ class MyBoruta(Model):
         else:
             raise Exception("Model has no fset_ yet. Not fitted?")
 
-    def score(self, X, y, cv=5):
+    def cvscore(self, X, y, cv=5):
         estimator = self.estimator.estimator  # use inner RF
         return np.mean(cross_val_score(estimator, X, y, cv=cv))
 
 
 def fset_and_score(model: Model, X, y, params=None):
     m = model(params).fit(X, y)
-    score = m.score(X, y)
+    score = m.cvscore(X, y)
     fset = m.fset(X, y)
     fset = np.where(fset)
     return fset[0], score

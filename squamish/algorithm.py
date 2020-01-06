@@ -44,6 +44,7 @@ def sort_features(X, y, MR, AR):
     X_allinformative = scale(X_allinformative)
     sig_bounds = get_significance_bounds(model,X_allinformative,y)
     print(f"sig bounds: {sig_bounds}")
+    
     diffs = np.zeros(len(MR))
     imps = np.zeros((len(MR), X.shape[1]))
     for i, f in enumerate(MR):
@@ -61,11 +62,12 @@ def sort_features(X, y, MR, AR):
 
         # Test if value lies in acceptance range of null distribution 
         # i.e. no signif. change compared to perm. feature
-        if sig_bounds[0] <= score_without_f <= sig_bounds[1]:
-            print(f"W")
-            W.append(f)
-        else:
+        # __We only check lower dist bound for worsening score when f is removed -> Strong relevant
+        if score_without_f < sig_bounds[0]: 
             print(f"S")
             S.append(f)
+        else:
+            print(f"W")
+            W.append(f)
 
     return S, W, diffs, imps

@@ -13,6 +13,8 @@ import squamish.utils
 from scipy import stats
 from squamish.stat import get_significance_bounds
 from squamish.utils import reduced_data
+from copy import copy, deepcopy
+
 
 def remove_F(f, MR, W):
     C = np.setdiff1d(MR, f)  # Remove f from minimal set
@@ -33,41 +35,53 @@ def sort_features(X, y, MR, AR):
     score_on_MR = model.redscore(X, y, MR)
     score_on_AR = model.redscore(X, y, AR)
     score_on_MR_and_W = model.redscore(X, y, MR_and_W)
+    normal_imps = model.importances()
+    print("length MR and W", len(MR_and_W))
     scores = {"MR": score_on_MR, "AR": score_on_AR, "MR+W": score_on_MR_and_W}
 
     for k, sc in scores.items():
         print(f"{k} has score {sc}")
 
-
     # Get Statistic
     X_allinformative = reduced_data(X, MR_and_W)
     X_allinformative = scale(X_allinformative)
-    sig_bounds = get_significance_bounds(model,X_allinformative,y)
-    print(f"sig bounds: {sig_bounds}")
-    
-    diffs = np.zeros(len(MR))
+    score_bounds, imp_bounds_list = get_significance_bounds(
+        model, X_allinformative, y, importances=True
+    )
+    print(f"sig bounds: {score_bounds}")
+
+    diffs = np.zeros(len(MR))  #  Differences of scores on feature subset
     imps = np.zeros((len(MR), X.shape[1]))
     for i, f in enumerate(MR):
         # Remove feature f from MR u W
         fset_without_f = remove_F(f, MR, W)
         print(fset_without_f)
+
         # check score if f is removed
         score_without_f = model.redscore(X, y, fset_without_f)
-
-        # imps[i,C] = imps_c
-        # imps[i,i] = np.median(imps_c) # Replace current importance for feature f with median as neutral element
         diffs[i] = score_on_MR_and_W - score_without_f  # Record score when f is missing
-
         print(f"score without {f} is {score_without_f:.3}-> ", end="")
-
-        # Test if value lies in acceptance range of null distribution 
+        # Test if value lies in acceptance range of null distribution
         # i.e. no signif. change compared to perm. feature
         # __We only check lower dist bound for worsening score when f is removed -> Strong relevant
-        if score_without_f < sig_bounds[0]: 
+        if score_without_f < score_bounds[0]:
             print(f"S")
             S.append(f)
         else:
             print(f"W")
             W.append(f)
 
-    return S, W, diffs, imps
+        #
+        #
+        # Record Importances with this subset of features
+        imps_without_f = model.importances()
+        imps[i, fset_without_f] = imps_without_f
+        # Replace current importance for feature f with median as neutral element
+        # imps[i,i] = np.median(imps_without_f)
+        imps[
+            i, i
+        ] = (
+            np.nan
+        )  # Replace current importance for feature f with median as neutral element
+
+    return S, W, diffs, imps, normal_imps, imp_bounds_list

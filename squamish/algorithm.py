@@ -43,16 +43,22 @@ def sort_features(X, y, MR, AR):
         print(f"{k} has score {sc}")
 
     # Get Statistic
+    # TODO: we only consider relevant here, check all features??
     X_allinformative = reduced_data(X, MR_and_W)
     X_allinformative = scale(X_allinformative)
     score_bounds, imp_bounds_list = get_significance_bounds(
         model, X_allinformative, y, importances=True
     )
-    print(f"sig bounds: {score_bounds}")
+    #print(f"sig bounds: {score_bounds}")
+
+    related = {}
 
     diffs = np.zeros(len(MR))  #  Differences of scores on feature subset
     imps = np.zeros((len(MR), X.shape[1]))
+    # TODO: Iteration over M u RR
     for i, f in enumerate(MR):
+        print("-------------------")
+        print(f"Feature i:{i} f:{f}")
         # Remove feature f from MR u W
         fset_without_f = remove_F(f, MR, W)
         print(fset_without_f)
@@ -60,7 +66,7 @@ def sort_features(X, y, MR, AR):
         # check score if f is removed
         score_without_f = model.redscore(X, y, fset_without_f)
         diffs[i] = score_on_MR_and_W - score_without_f  # Record score when f is missing
-        print(f"score without {f} is {score_without_f:.3}-> ", end="")
+        print(f"removal_score:{score_without_f:.3}-> ", end="")
         # Test if value lies in acceptance range of null distribution
         # i.e. no signif. change compared to perm. feature
         # __We only check lower dist bound for worsening score when f is removed -> Strong relevant
@@ -83,5 +89,25 @@ def sort_features(X, y, MR, AR):
         ] = (
             np.nan
         )  # Replace current importance for feature f with median as neutral element
+        print(len(imps_without_f),len(imp_bounds_list))
+        # TODO: correct checks?
+        related[f] = check_related(imps_without_f, imp_bounds_list)
 
+    print("Related:",related)
     return S, W, diffs, imps, normal_imps, imp_bounds_list
+
+
+def check_related(importances_i, imp_bounds):
+    cands = []
+    for j in range(len(importances_i)):
+
+        lo,hi = imp_bounds[j]
+        imp = importances_i[j]
+        if lo <= imp <= hi:
+            # No change in relation to null dist
+            continue
+        else:
+            print(j, lo, imp, hi)
+            cands.append(j)
+    return cands
+

@@ -33,10 +33,9 @@ class Main(BaseEstimator, SelectorMixin):
         print(f"Features from RF:\n {MR}")
 
         # Sort features iteratively into strongly (S) and weakly (W) sets
-        S, W, score_diffs, importances, normal_imps, imp_bound_list  = sort_features(X, y, MR, AR)
+        S, W, importances, normal_imps, imp_bound_list  = sort_features(X, y, MR, AR)
         self.raw_importances_ = importances
         self.normal_importances_ = normal_imps
-        self.feature_score_differences_ = score_diffs
         self.imp_bound_list = imp_bound_list
 
         # Turn index sets into support vector

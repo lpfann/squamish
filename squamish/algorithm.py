@@ -53,8 +53,8 @@ def sort_features(X, y, MR, AR):
 
     related = {}
 
-    diffs = np.zeros(len(MR))  #  Differences of scores on feature subset
     imps = np.zeros((len(MR), X.shape[1]))
+
     # TODO: Iteration over M u RR
     for i, f in enumerate(MR):
         print("-------------------")
@@ -64,7 +64,6 @@ def sort_features(X, y, MR, AR):
 
         # check score if f is removed
         score_without_f = model.redscore(X, y, fset_without_f)
-        diffs[i] = score_on_MR_and_W - score_without_f  # Record score when f is missing
         print(f"removal_score:{score_without_f:.3}-> ", end="")
         # Test if value lies in acceptance range of null distribution
         # i.e. no signif. change compared to perm. feature
@@ -93,7 +92,7 @@ def sort_features(X, y, MR, AR):
         print(related[f])
         
     print("Related:",related)
-    return S, W, diffs, imps, normal_imps, imp_bounds_list
+    return S, W, imps, normal_imps, imp_bounds_list
 
 
 def check_related(importances_i, imp_bounds):

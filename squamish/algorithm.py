@@ -16,7 +16,7 @@ from squamish.utils import reduced_data
 from copy import copy, deepcopy
 
 
-def remove_F(f, MR, W):
+def get_combined_set_without_f(f, MR, W):
     C = np.setdiff1d(MR, f)  # Remove f from minimal set
     C = np.union1d(C, W)  # Combine with weakly relevant features
     C = np.sort(C).astype(int)
@@ -60,8 +60,7 @@ def sort_features(X, y, MR, AR):
         print("-------------------")
         print(f"Feature i:{i} f:{f}")
         # Remove feature f from MR u W
-        fset_without_f = remove_F(f, MR, W)
-        print(fset_without_f)
+        fset_without_f = get_combined_set_without_f(f, MR, W)
 
         # check score if f is removed
         score_without_f = model.redscore(X, y, fset_without_f)
@@ -89,10 +88,10 @@ def sort_features(X, y, MR, AR):
         ] = (
             np.nan
         )  # Replace current importance for feature f with median as neutral element
-        print(len(imps_without_f),len(imp_bounds_list))
         # TODO: correct checks?
         related[f] = check_related(imps_without_f, imp_bounds_list)
-
+        print(related[f])
+        
     print("Related:",related)
     return S, W, diffs, imps, normal_imps, imp_bounds_list
 
@@ -110,4 +109,3 @@ def check_related(importances_i, imp_bounds):
             print(j, lo, imp, hi)
             cands.append(j)
     return cands
-

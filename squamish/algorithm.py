@@ -40,8 +40,8 @@ def is_significant_score_deviation(score_without_f, null_distribution):
         print(f"W")
         return False
 
-class FeatureSorter():
 
+class FeatureSorter:
     def __init__(self, X, y, MR, AR):
         self.X = X
         self.y = y
@@ -62,7 +62,7 @@ class FeatureSorter():
             self.model, X_allinformative, y, importances=True
         )
         self.fimp_bounds = {}
-        for f_ix,imp in zip(self.MR_and_W,imp_bounds_list):
+        for f_ix, imp in zip(self.MR_and_W, imp_bounds_list):
             self.fimp_bounds[f_ix] = imp
 
     def check_each_feature(self):
@@ -76,8 +76,9 @@ class FeatureSorter():
 
             # Determine Relevance class by checking score without feature f
             score_without_f = self.model.redscore(self.X, self.y, fset_without_f)
-            significant = is_significant_score_deviation(score_without_f,
-                                                         self.score_bounds)
+            significant = is_significant_score_deviation(
+                score_without_f, self.score_bounds
+            )
             if significant:
                 self.S.append(f)
             else:
@@ -85,8 +86,7 @@ class FeatureSorter():
 
             #
             # Record Importances with this subset of features
-            finder = RelationFinder([f], (self.X, self.y), self.model,
-                                 self.fimp_bounds)
+            finder = RelationFinder([f], (self.X, self.y), self.model, self.fimp_bounds)
             if not significant:
                 relatives = finder.get_relatives(f, fset_without_f, prefit=True)
                 relatives.remove(f)  # Remove self

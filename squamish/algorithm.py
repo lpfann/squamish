@@ -94,23 +94,30 @@ def sort_features(X, y, MR, AR):
             relatives = finder.get_relatives(
                 f, fset_without_f, prefit=True
             )
+            relatives.remove(f) # Remove self
             related[f] = relatives
         else:
             relatives = finder.check_for_synergies(fset_without_f)
             synergies[f] = relatives
 
+    related = filter_strongly(related,S)
+
     print("Related:", related)
     print("Synergies:", synergies)
     return S, W, imps, normal_imps, imp_bounds_list
 
-
+def filter_strongly(related,known_strongly):
+    for k,v in related.items():
+        related[k] = list(filter(lambda x: x not in known_strongly,v))
+    return related
 class FindRelated:
     def __init__(self,seen, data, model, importances_null_bounds):
         self.seen = seen
         self.data = data
         self.model = model
         self.importances_null_bounds = importances_null_bounds
-    
+
+
     def check_for_synergies(self,fset_without_f):
         # Get importances together with feature index
         importances = zip(fset_without_f, self.model.importances())

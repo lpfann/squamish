@@ -40,85 +40,90 @@ def is_significant_score_deviation(score_without_f, null_distribution):
         print(f"W")
         return False
 
+class FeatureSorter():
 
-def sort_features(X, y, MR, AR):
+    def __init__(self, X, y, MR, AR):
+        self.X = X
+        self.y = y
+        self.MR = MR
+        self.AR = AR
+        self.S = []
+        self.W = list(np.setdiff1d(AR, MR))
+        self.MR_and_W = combine_sets(MR, self.W)
+        print(f"predetermined weakly {self.W}")
 
-    S = []
-    W = list(np.setdiff1d(AR, MR))
-    MR_and_W = np.union1d(MR, W)
-    print(f"predetermined weakly {W}")
+        self.model = RF()
 
-    model = RF()
+        # Get Statistic
+        # TODO: we only consider relevant here, check all features??
+        X_allinformative = reduced_data(X, self.MR_and_W)
+        X_allinformative = scale(X_allinformative)
+        self.score_bounds, imp_bounds_list = get_significance_bounds(
+            self.model, X_allinformative, y, importances=True
+        )
+        self.fimp_bounds = {}
+        for f_ix,imp in zip(self.MR_and_W,imp_bounds_list):
+            self.fimp_bounds[f_ix] = imp
 
+    def check_each_feature(self):
+        self.related = {}
+        self.synergies = {}
+        for f in self.MR:
+            print("-------------------")
+            print(f"Feature f:{f}")
+            # Remove feature f from MR u W
+            fset_without_f = set_without_f(self.MR_and_W, f)
+
+            # Determine Relevance class by checking score without feature f
+            score_without_f = self.model.redscore(self.X, self.y, fset_without_f)
+            significant = is_significant_score_deviation(score_without_f,
+                                                         self.score_bounds)
+            if significant:
+                self.S.append(f)
+            else:
+                self.W.append(f)
+
+            #
+            # Record Importances with this subset of features
+            finder = RelationFinder([f], (self.X, self.y), self.model,
+                                 self.fimp_bounds)
+            if not significant:
+                relatives = finder.get_relatives(f, fset_without_f, prefit=True)
+                relatives.remove(f)  # Remove self
+                self.related[f] = relatives
+            else:
+                relatives = finder.check_for_synergies(fset_without_f)
+                self.synergies[f] = relatives
+        self.related = filter_strongly(self.related, self.S)
+        print("Related:", self.related)
+        print("Synergies:", self.synergies)
+
+
+def print_scores_on_sets(AR, MR, MR_and_W, X, model, y):
     score_on_MR = model.redscore(X, y, MR)
     score_on_AR = model.redscore(X, y, AR)
     score_on_MR_and_W = model.redscore(X, y, MR_and_W)
     normal_imps = model.importances()
     print("length MR and W", len(MR_and_W))
     scores = {"MR": score_on_MR, "AR": score_on_AR, "MR+W": score_on_MR_and_W}
-
     for k, sc in scores.items():
         print(f"{k} has score {sc}")
 
-    # Get Statistic
-    # TODO: we only consider relevant here, check all features??
-    X_allinformative = reduced_data(X, MR_and_W)
-    X_allinformative = scale(X_allinformative)
-    score_bounds, imp_bounds_list = get_significance_bounds(
-        model, X_allinformative, y, importances=True
-    )
-    # print(f"sig bounds: {score_bounds}")
 
-    related = {}
-    synergies = {}
-    imps = np.zeros((len(MR), X.shape[1]))
-
-    for f in MR:
-        print("-------------------")
-        print(f"Feature f:{f}")
-        # Remove feature f from MR u W
-        fset_without_f = set_without_f(MR_and_W, f)
-
-        # Determine Relevance class by checking score without feature f
-        score_without_f = model.redscore(X, y, fset_without_f)
-        significant = is_significant_score_deviation(score_without_f, score_bounds)
-        if significant:
-            S.append(f)
-        else:
-            W.append(f)
-
-        #
-        # Record Importances with this subset of features
-        finder = FindRelated([f], (X,y),model,imp_bounds_list)
-        if not significant:
-            relatives = finder.get_relatives(
-                f, fset_without_f, prefit=True
-            )
-            relatives.remove(f) # Remove self
-            related[f] = relatives
-        else:
-            relatives = finder.check_for_synergies(fset_without_f)
-            synergies[f] = relatives
-
-    related = filter_strongly(related,S)
-
-    print("Related:", related)
-    print("Synergies:", synergies)
-    return S, W, imps, normal_imps, imp_bounds_list
-
-def filter_strongly(related,known_strongly):
-    for k,v in related.items():
-        related[k] = list(filter(lambda x: x not in known_strongly,v))
+def filter_strongly(related, known_strongly):
+    for k, v in related.items():
+        related[k] = list(filter(lambda x: x not in known_strongly, v))
     return related
-class FindRelated:
-    def __init__(self,seen, data, model, importances_null_bounds):
+
+
+class RelationFinder:
+    def __init__(self, seen, data, model, importances_null_bounds):
         self.seen = seen
         self.data = data
         self.model = model
         self.importances_null_bounds = importances_null_bounds
 
-
-    def check_for_synergies(self,fset_without_f):
+    def check_for_synergies(self, fset_without_f):
         # Get importances together with feature index
         importances = zip(fset_without_f, self.model.importances())
         # Find significantly different behaving features in this model
@@ -130,8 +135,8 @@ class FindRelated:
             Recursively check and remove features which are related.
             We keep a state in the object to save already seen features to remove redundancies
         """
-        print(f"feature {f} fset:{fset}")
-        
+        # print(f"feature {f} fset:{fset}")
+
         if f not in self.seen:
             # add feature to seen list
             self.seen = combine_sets(self.seen, [f])
@@ -156,13 +161,11 @@ class FindRelated:
         rels.append(f)
         # Check unseen features with an importance value which changed significantly
         for fu in unseen:
-            if len(fset_without_f)==1:
+            if len(fset_without_f) == 1:
                 rels.append(fu)
             else:
-                # Recursion into feature fu 
-                child_rel = self.get_relatives(
-                    fu, fset_without_f
-                )
+                # Recursion into feature fu
+                child_rel = self.get_relatives(fu, fset_without_f)
 
                 # Return child relative list and add it to this list
                 rels.extend(child_rel)

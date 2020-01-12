@@ -8,7 +8,7 @@ from sklearn.model_selection import ParameterGrid
 from sklearn.preprocessing import scale
 
 from squamish.utils import create_support_AR
-from squamish.algorithm import sort_features
+from squamish.algorithm import FeatureSorter
 import squamish.models as models
 from . import utils, plot
 
@@ -33,14 +33,11 @@ class Main(BaseEstimator, SelectorMixin):
         print(f"Features from RF:\n {MR}")
 
         # Sort features iteratively into strongly (S) and weakly (W) sets
-        S, W, importances, normal_imps, imp_bound_list  = sort_features(X, y, MR, AR)
-        self.raw_importances_ = importances
-        self.normal_importances_ = normal_imps
-        self.imp_bound_list = imp_bound_list
-
+        self.fsorter = FeatureSorter(X, y, MR, AR)
+        self.fsorter.check_each_feature()
         # Turn index sets into support vector
         # (2 strong relevant,1 weak relevant, 0 irrelevant)
-        all_rel_support = create_support_AR(d, S, W)
+        all_rel_support = create_support_AR(d, self.fsorter.S, self.fsorter.W)
         self.relevance_classes_ = all_rel_support
 
         # Simple boolean vector where relevan features are regarded as one set (1 relevant, 0 irrelevant)

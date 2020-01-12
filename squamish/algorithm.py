@@ -109,33 +109,45 @@ class FindRelated:
         self.seen = seen
 
     def get_relatives(self, f, fset, prefit=False):
+        """
+            Recursively check and remove features which are related.
+            We keep a state in the object to save already seen features to remove redundancies
+        """
         if prefit:
+            # Prefit only in first call to save one model fit
             fset_without_f = fset
         else:
+            # Fit model without feature f
             fset_without_f = set_without_f(fset, f)
             self.model.redscore(*self.data, fset_without_f)
+        # Get importances together with feature index
         importances = zip(fset_without_f, self.model.importances())
+        # Find significantly different behaving features in this model
         relatives = self.get_significant_imp_changes(importances)
-
+        # If features where already handled earlier, filter out
         unseen = list(filter(lambda x: x not in self.seen, relatives))
+        # Create list of child features which are related
         rels = []
         if f not in self.seen:
+            # add feature to seen list
             rels.append(f)
             self.seen = combine_sets(self.seen, [f])
-        print("current", f, "unseen", unseen)
 
+        # Check unseen features with an importance value which changed significantly
         for fu in unseen:
+            # Recursion into feature fu 
             child_rel = self.get_relatives(
                 fu, fset_without_f
             )
+            # Return child relative list and add it to this list
             rels.extend(child_rel)
-
 
         return rels
 
     def get_significant_imp_changes(self, importances_other):
         cands = []
         for f_ix, imp in importances_other:
+            # Check null distribution of pristine model without deleted features
             lo, hi = self.importances_null_bounds[f_ix]
             if lo <= imp <= hi:
                 # No change in relation to null dist

@@ -16,25 +16,31 @@ from squamish.utils import reduced_data
 from copy import copy, deepcopy
 
 
-def get_combined_set_without_f(f, MR, W):
-    C = np.setdiff1d(MR, f)  # Remove f from minimal set
-    C = np.union1d(C, W)  # Combine with weakly relevant features
+def combine_sets(A, B):
+    C = np.union1d(A, B)  # Combine with weakly relevant features
     C = np.sort(C).astype(int)
     return C
 
-def is_significant_score_deviation(score_without_f,null_distribution):
-        # check score if f is removed
-        print(f"removal_score:{score_without_f:.3}-> ", end="")
-        # Test if value lies in acceptance range of null distribution
-        # i.e. no signif. change compared to perm. feature
-        # __We only check lower dist bound for worsening score when f is removed -> Strong relevant
-        if score_without_f < null_distribution[0]:
-            print(f"S")
-            return True
-        else:
-            print(f"W")
-            return False
-        
+
+def set_without_f(A, f):
+    C = np.setdiff1d(A, f)  # Remove f from set
+    return C.astype(int)
+
+
+def is_significant_score_deviation(score_without_f, null_distribution):
+    # check score if f is removed
+    print(f"removal_score:{score_without_f:.3}-> ", end="")
+    # Test if value lies in acceptance range of null distribution
+    # i.e. no signif. change compared to perm. feature
+    # __We only check lower dist bound for worsening score when f is removed -> Strong relevant
+    if score_without_f < null_distribution[0]:
+        print(f"S")
+        return True
+    else:
+        print(f"W")
+        return False
+
+
 def sort_features(X, y, MR, AR):
 
     S = []
@@ -61,22 +67,22 @@ def sort_features(X, y, MR, AR):
     score_bounds, imp_bounds_list = get_significance_bounds(
         model, X_allinformative, y, importances=True
     )
-    #print(f"sig bounds: {score_bounds}")
+    # print(f"sig bounds: {score_bounds}")
 
     related = {}
 
     imps = np.zeros((len(MR), X.shape[1]))
 
-    # TODO: Iteration over M u RR
     for f in MR:
         print("-------------------")
         print(f"Feature f:{f}")
+
         # Remove feature f from MR u W
-        fset_without_f = get_combined_set_without_f(f, MR, W)
+        fset_without_f = set_without_f(MR_and_W, f)
 
         # Determine Relevance class by checking score without feature f
-        score_without_f = model.redscore(X,y, fset_without_f)
-        significant = is_significant_score_deviation(score_without_f,score_bounds)
+        score_without_f = model.redscore(X, y, fset_without_f)
+        significant = is_significant_score_deviation(score_without_f, score_bounds)
         if significant:
             S.append(f)
         else:
@@ -85,22 +91,56 @@ def sort_features(X, y, MR, AR):
         #
         # Record Importances with this subset of features
         if not significant:
-            ix_and_imps = zip(fset_without_f,model.importances())
-            related[f] = check_related(ix_and_imps,imp_bounds_list)
+            finder = FindRelated(MR, (X,y),model,imp_bounds_list)
+            relatives = finder.get_relatives(
+                f, fset_without_f, prefit=True
+            )
+            related[f] = relatives
 
-        
-    print("Related:",related)
+    print("Related:", related)
     return S, W, imps, normal_imps, imp_bounds_list
 
 
-def check_related(importances_other, importances_null_bounds):
-    cands = []
-    for f_ix,imp in importances_other:
-        lo,hi = importances_null_bounds[f_ix]
-        if lo <= imp <= hi:
-            # No change in relation to null dist
-            continue
+class FindRelated:
+    def __init__(self,seen, data, model, importances_null_bounds):
+        self.data = data
+        self.model = model
+        self.importances_null_bounds = importances_null_bounds
+        self.seen = seen
+
+    def get_relatives(self, f, fset, prefit=False):
+        if prefit:
+            fset_without_f = fset
         else:
-            print(f_ix, lo, imp, hi)
-            cands.append(f_ix)
-    return cands
+            fset_without_f = set_without_f(fset, f)
+            self.model.redscore(*self.data, fset_without_f)
+        importances = zip(fset_without_f, self.model.importances())
+        relatives = self.get_significant_imp_changes(importances)
+
+        unseen = list(filter(lambda x: x not in self.seen, relatives))
+        rels = []
+        if f not in self.seen:
+            rels.append(f)
+            self.seen = combine_sets(self.seen, [f])
+        print("current", f, "unseen", unseen)
+
+        for fu in unseen:
+            child_rel = self.get_relatives(
+                fu, fset_without_f
+            )
+            rels.extend(child_rel)
+
+
+        return rels
+
+    def get_significant_imp_changes(self, importances_other):
+        cands = []
+        for f_ix, imp in importances_other:
+            lo, hi = self.importances_null_bounds[f_ix]
+            if lo <= imp <= hi:
+                # No change in relation to null dist
+                continue
+            else:
+                # print(f_ix, lo, imp, hi)
+                cands.append(f_ix)
+        return cands

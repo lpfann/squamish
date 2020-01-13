@@ -24,3 +24,5 @@ def test():
     bounds = get_significance_bounds(model, X, y, n_resampling=50, fpr=1e-3)
     assert type(bounds) is tuple
     assert bounds[0] < normal_score < bounds[1]
+
+

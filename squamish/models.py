@@ -1,4 +1,4 @@
-from squamish.utils import reduced_data, cv_score
+from squamish.utils import reduced_data, cv_score, perm_i_in_X
 import lightgbm
 import numpy as np
 import pandas as pd
@@ -55,7 +55,7 @@ class RF(Model):
         # old setting?
         #"feature_fraction": 0.5,
         "importance_type": "gain",
-        "verbose": 0,
+        "verbose": 0
     }
 
     def __init__(self, params=None):
@@ -77,6 +77,11 @@ class RF(Model):
         self.estimator.fit(X_c, y)
         return self.score(X_c, y)
 
+    def score_with_i_permuted(self, X, y, i,random_state):
+        X_c = perm_i_in_X(X,i,random_state)
+        X_c = scale(X_c)
+        self.estimator.fit(X_c, y)
+        return self.score(X_c, y)
 
 class MyBoruta(Model):
     BEST_PARAMS_BORUTA = {

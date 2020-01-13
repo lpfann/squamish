@@ -48,6 +48,14 @@ def reduced_data(X, featureset):
     featureset = np.ravel(featureset).astype(int)
     return X[:, featureset]
 
+def perm_i_in_X(X, feature_i, random_state):
+    X_copy = np.copy(X)
+    # Permute selected feature
+    permutated_feature = random_state.permutation(X_copy[:, feature_i])
+
+    # Append permutation to dataset
+    X_copy[:,feature_i] = permutated_feature
+    return X_copy
 
 def compute_importances(recorded_importances):
     mins, median, maxs = np.percentile(recorded_importances, [0, 50, 100], axis=0)

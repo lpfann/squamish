@@ -2,7 +2,7 @@ from scipy import stats
 import numpy as np
 
 
-def _create_probe_statistic(probe_values, fpr, verbose=0):
+def _create_probe_statistic(probe_values, fpr):
     # Create prediction interval statistics based on randomly permutated probe features (based on real features)
     n = len(probe_values)
 
@@ -19,6 +19,7 @@ def _create_probe_statistic(probe_values, fpr, verbose=0):
     return low_t, up_t
 
 
+
 def add_NFeature_to_X(X, feature_i, random_state):
     X_copy = np.copy(X)
     # Permute selected feature
@@ -29,8 +30,9 @@ def add_NFeature_to_X(X, feature_i, random_state):
     return X_copy
 
 
-def _perm_scores(model, X, y, n_resampling, importances=False):
-    random_state = np.random.RandomState()
+def _perm_scores(model, X, y, n_resampling, importances=False,random_state=None):
+    if random_state is None:
+        random_state = np.random.RandomState()
 
     # Random sample n_resampling shadow features by permuting real features
     random_choice = random_state.choice(a=X.shape[1], size=n_resampling)
@@ -48,8 +50,8 @@ def _perm_scores(model, X, y, n_resampling, importances=False):
             yield score,
 
 
-def get_significance_bounds(model, X, y, n_resampling=40, fpr=1e-3, importances=False):
-    sample_tuples = list(_perm_scores(model, X, y, n_resampling,importances=importances))
+def get_significance_bounds(model, X, y, n_resampling=40, fpr=1e-4, importances=False,random_state=None):
+    sample_tuples = list(_perm_scores(model, X, y, n_resampling,importances=importances,random_state=random_state))
 
     scores = [sc[0] for sc in sample_tuples]
     score_stat = _create_probe_statistic(scores, fpr)

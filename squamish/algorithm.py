@@ -42,7 +42,21 @@ def is_significant_score_deviation(score_without_f, null_distribution):
 
 
 class FeatureSorter:
-    def __init__(self, X, y, MR, AR):
+    PARAMS = {
+        "max_depth": 5,
+        "boosting_type": "rf",
+        "bagging_fraction": 0.632,
+        "bagging_freq": 1,
+        "importance_type": "gain",
+        "verbose": 0
+    }
+    #SPARSE_PARAMS = copy(PARAMS)
+    #SPARSE_PARAMS["feature_fraction"] = 1
+    DENSE_PARAMS = copy(PARAMS)
+    DENSE_PARAMS["feature_fraction"] = 0.1
+
+    def __init__(self, X, y, MR, AR,random_state):
+        self.random_state = random_state
         self.X = X
         self.y = y
         self.MR = MR
@@ -52,15 +66,18 @@ class FeatureSorter:
         self.MR_and_W = combine_sets(MR, self.W)
         print(f"predetermined weakly {self.W}")
 
-        self.model = RF()
+        self.model = RF(params=self.DENSE_PARAMS)
+        print_scores_on_sets(AR, MR, self.MR_and_W, X, self.model, y)
 
-        # Get Statistic
-        # TODO: we only consider relevant here, check all features??
+        self.create_null_stat(self.model, X,y)
+
+    def create_null_stat(self,model, X, y):
         X_allinformative = reduced_data(X, self.MR_and_W)
         X_allinformative = scale(X_allinformative)
         self.score_bounds, imp_bounds_list = get_significance_bounds(
-            self.model, X_allinformative, y, importances=True
+            model, X_allinformative, y, importances=True, random_state=self.random_state
         )
+        print(f"score bounds: {self.score_bounds}")
         self.fimp_bounds = {}
         for f_ix, imp in zip(self.MR_and_W, imp_bounds_list):
             self.fimp_bounds[f_ix] = imp
@@ -72,16 +89,18 @@ class FeatureSorter:
         if len(self.MR_and_W)==1:
                 # Only one feature, which should be str. relevant
                 self.S = self.MR
+                print("Only one feature")
                 return
 
         for f in self.MR:
             print("-------------------")
             print(f"Feature f:{f}")
+
             # Remove feature f from MR u W
             fset_without_f = set_without_f(self.MR_and_W, f)
 
             # Determine Relevance class by checking score without feature f
-            score_without_f = self.model.redscore(self.X, self.y, fset_without_f)
+            score_without_f = self.model.score_with_i_permuted(self.X, self.y, f,random_state=self.random_state)
             significant = is_significant_score_deviation(
                 score_without_f, self.score_bounds
             )
@@ -94,16 +113,19 @@ class FeatureSorter:
             # Record Importances with this subset of features
             finder = RelationFinder([f], (self.X, self.y), self.model, self.fimp_bounds)
             if not significant:
-                relatives = finder.get_relatives(f, fset_without_f, prefit=True)
-                relatives.remove(f)  # Remove self
+                relatives = finder.check_for_redundancies(fset_without_f)
+                #relatives.remove(f)  # Remove self
                 self.related[f] = relatives
             else:
                 relatives = finder.check_for_synergies(fset_without_f)
                 if len(relatives)>0:
                     self.synergies[f] = relatives
+
         self.related = filter_strongly(self.related, self.S)
         print("Related:", self.related)
         print("Synergies:", self.synergies)
+        print("S:",self.S)
+        print("W:",self.W)
 
 
 def print_scores_on_sets(AR, MR, MR_and_W, X, model, y):
@@ -111,6 +133,7 @@ def print_scores_on_sets(AR, MR, MR_and_W, X, model, y):
     score_on_AR = model.redscore(X, y, AR)
     score_on_MR_and_W = model.redscore(X, y, MR_and_W)
     normal_imps = model.importances()
+    print(f"normal_imps:{normal_imps}")
     print("length MR and W", len(MR_and_W))
     scores = {"MR": score_on_MR, "AR": score_on_AR, "MR+W": score_on_MR_and_W}
     for k, sc in scores.items():
@@ -137,47 +160,54 @@ class RelationFinder:
         relatives = self.features_with_significant_negative_change(importances)
         return relatives
 
-    def get_relatives(self, f, fset, prefit=False):
-        """
-            Recursively check and remove features which are related.
-            We keep a state in the object to save already seen features to remove redundancies
-        """
-        # print(f"feature {f} fset:{fset}")
-
-        if f not in self.seen:
-            # add feature to seen list
-            self.seen = combine_sets(self.seen, [f])
-
-        if prefit:
-            # Prefit only in first call to save one model fit
-            fset_without_f = fset
-        else:
-            # Fit model without feature f
-            fset_without_f = set_without_f(fset, f)
-            self.model.redscore(*self.data, fset_without_f)
-
+    def check_for_redundancies(self, fset_without_f):
         # Get importances together with feature index
         importances = zip(fset_without_f, self.model.importances())
         # Find significantly different behaving features in this model
         relatives = self.features_with_significant_positive_change(importances)
-        # If features where already handled earlier, filter out
-        unseen = list(filter(lambda x: x not in self.seen, relatives))
+        return relatives
 
-        # Create list of child features which are related
-        rels = []
-        rels.append(f)
-        # Check unseen features with an importance value which changed significantly
-        for fu in unseen:
-            if len(fset_without_f) == 1:
-                rels.append(fu)
-            else:
-                # Recursion into feature fu
-                child_rel = self.get_relatives(fu, fset_without_f)
-
-                # Return child relative list and add it to this list
-                rels.extend(child_rel)
-
-        return list(np.unique(rels))
+    # def get_relatives(self, f, fset, prefit=False):
+    #     """
+    #         Recursively check and remove features which are related.
+    #         We keep a state in the object to save already seen features to remove redundancies
+    #     """
+    #     # print(f"feature {f} fset:{fset}")
+    #
+    #     if f not in self.seen:
+    #         # add feature to seen list
+    #         self.seen = combine_sets(self.seen, [f])
+    #
+    #     if prefit:
+    #         # Prefit only in first call to save one model fit
+    #         fset_without_f = fset
+    #     else:
+    #         # Fit model without feature f
+    #         fset_without_f = set_without_f(fset, f)
+    #         self.model.redscore(*self.data, fset_without_f)
+    #
+    #     # Get importances together with feature index
+    #     importances = zip(fset_without_f, self.model.importances())
+    #     # Find significantly different behaving features in this model
+    #     relatives = self.features_with_significant_positive_change(importances)
+    #     # If features where already handled earlier, filter out
+    #     unseen = list(filter(lambda x: x not in self.seen, relatives))
+    #
+    #     # Create list of child features which are related
+    #     rels = []
+    #     rels.append(f)
+    #     # Check unseen features with an importance value which changed significantly
+    #     for fu in unseen:
+    #         if len(fset_without_f) == 1:
+    #             rels.append(fu)
+    #         else:
+    #             # Recursion into feature fu
+    #             child_rel = self.get_relatives(fu, fset_without_f)
+    #
+    #             # Return child relative list and add it to this list
+    #             rels.extend(child_rel)
+    #
+    #     return list(np.unique(rels))
 
     def features_with_significant_change(self, importances_other):
         cands = []
@@ -198,8 +228,11 @@ class RelationFinder:
 
     def features_with_significant_positive_change(self, importances_other):
         cands = []
+        importances_other = list(importances_other)
+        print([imps[1] for imps in importances_other])
         for f_ix, imp in importances_other:
             _, hi = self.importances_null_bounds[f_ix]
             if imp > hi:
+                print(f"feature:{f_ix}, imp:{imp} , upperb:{hi}")
                 cands.append(f_ix)
         return cands

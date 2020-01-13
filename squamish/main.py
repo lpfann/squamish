@@ -15,9 +15,13 @@ from . import utils, plot
 class Main(BaseEstimator, SelectorMixin):
 
     def __init__(
-        self, problem="classification", params_boruta=None, params_iterative=None, 
+        self, problem="classification", params_boruta=None, params_iterative=None,
+        random_state=None
     ):
         self.problem = problem
+        if random_state is None:
+            random_state=np.random.RandomState()
+        self.random_state=random_state
 
     def _get_support_mask(self):
         return self.support_
@@ -33,7 +37,7 @@ class Main(BaseEstimator, SelectorMixin):
         print(f"Features from RF:\n {MR}")
 
         # Sort features iteratively into strongly (S) and weakly (W) sets
-        self.fsorter = FeatureSorter(X, y, MR, AR)
+        self.fsorter = FeatureSorter(X, y, MR, AR,self.random_state)
         self.fsorter.check_each_feature()
         # Turn index sets into support vector
         # (2 strong relevant,1 weak relevant, 0 irrelevant)

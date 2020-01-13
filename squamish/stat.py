@@ -48,7 +48,7 @@ def _perm_scores(model, X, y, n_resampling, importances=False):
             yield score,
 
 
-def get_significance_bounds(model, X, y, n_resampling=10, fpr=1e-4, importances=False):
+def get_significance_bounds(model, X, y, n_resampling=40, fpr=1e-3, importances=False):
     sample_tuples = list(_perm_scores(model, X, y, n_resampling,importances=importances))
 
     scores = [sc[0] for sc in sample_tuples]

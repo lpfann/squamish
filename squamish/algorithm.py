@@ -69,7 +69,7 @@ class FeatureSorter:
         self.related = {}
         self.synergies = {}
 
-        if len(self.MR == 1):
+        if len(self.MR_and_W)==1:
                 # Only one feature, which should be str. relevant
                 self.S = self.MR
                 return

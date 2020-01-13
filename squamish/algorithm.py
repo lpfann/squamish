@@ -68,6 +68,12 @@ class FeatureSorter:
     def check_each_feature(self):
         self.related = {}
         self.synergies = {}
+
+        if len(self.MR == 1):
+                # Only one feature, which should be str. relevant
+                self.S = self.MR
+                return
+
         for f in self.MR:
             print("-------------------")
             print(f"Feature f:{f}")
@@ -93,7 +99,8 @@ class FeatureSorter:
                 self.related[f] = relatives
             else:
                 relatives = finder.check_for_synergies(fset_without_f)
-                self.synergies[f] = relatives
+                if len(relatives)>0:
+                    self.synergies[f] = relatives
         self.related = filter_strongly(self.related, self.S)
         print("Related:", self.related)
         print("Synergies:", self.synergies)

@@ -35,8 +35,6 @@ jobs:
     - name: Install dependencies
       if: steps.cache.outputs.cache-hit != 'true'
       run: poetry install -v
-    - name: Lint with black
-      run: poetry run black . --check
     - name: Test with pytest
       run: |
-        poetry run pytest  squamish/tests/ -n 2
+        poetry run pytest  squamish/tests/

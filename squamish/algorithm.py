@@ -27,18 +27,7 @@ def set_without_f(A, f):
     return C.astype(int)
 
 
-def is_significant_score_deviation(score_without_f, null_distribution):
-    # check score if f is removed
-    print(f"removal_score:{score_without_f:.3}-> ", end="")
-    # Test if value lies in acceptance range of null distribution
-    # i.e. no signif. change compared to perm. feature
-    # __We only check lower dist bound for worsening score when f is removed -> Strong relevant
-    if score_without_f < null_distribution[0]:
-        print(f"S")
-        return True
-    else:
-        print(f"W")
-        return False
+
 
 
 class FeatureSorter:
@@ -64,18 +53,32 @@ class FeatureSorter:
         self.S = []
         self.W = list(np.setdiff1d(AR, MR))
         self.MR_and_W = combine_sets(MR, self.W)
+        self.X_onlyrelevant = reduced_data(X, self.MR_and_W)
+        self.X_onlyrelevant = scale(self.X_onlyrelevant)
         print(f"predetermined weakly {self.W}")
 
         self.model = RF(params=self.DENSE_PARAMS)
         print_scores_on_sets(AR, MR, self.MR_and_W, X, self.model, y)
 
-        self.create_null_stat(self.model, X,y)
+        self.create_null_stat(self.model)
 
-    def create_null_stat(self,model, X, y):
-        X_allinformative = reduced_data(X, self.MR_and_W)
-        X_allinformative = scale(X_allinformative)
+    def is_significant_score_deviation(self, score_without_f):
+        # check score if f is removed
+        print(f"removal_score:{score_without_f:.3}-> ", end="")
+        # Test if value lies in acceptance range of null distribution
+        # i.e. no signif. change compared to perm. feature
+        # __We only check lower dist bound for worsening score when f is removed -> Strong relevant
+        if score_without_f < self.score_bounds[0]:
+            print(f"S")
+            return True
+        else:
+            print(f"W")
+            return False
+
+    def create_null_stat(self,model):
+
         self.score_bounds, imp_bounds_list = get_significance_bounds(
-            model, X_allinformative, y, importances=True, random_state=self.random_state
+            model, self.X_onlyrelevant, self.y, importances=True, random_state=self.random_state
         )
         print(f"score bounds: {self.score_bounds}")
         self.fimp_bounds = {}
@@ -93,26 +96,23 @@ class FeatureSorter:
                 return
 
         for f in self.MR:
-            print("-------------------")
-            print(f"Feature f:{f}")
+            print(f"------------------- Feature f:{f}")
 
             # Remove feature f from MR u W
             fset_without_f = set_without_f(self.MR_and_W, f)
 
             # Determine Relevance class by checking score without feature f
-            score_without_f = self.model.score_with_i_permuted(self.X, self.y, f,random_state=self.random_state)
-            significant = is_significant_score_deviation(
-                score_without_f, self.score_bounds
-            )
+            score_without_f = self.model.score_with_i_permuted(self.X_onlyrelevant, self.y, f,random_state=self.random_state)
+
+            significant = self.is_significant_score_deviation(score_without_f)
             if significant:
                 self.S.append(f)
             else:
                 self.W.append(f)
 
-            #
             # Record Importances with this subset of features
             if not significant:
-                finder = RelationFinder([f], (self.X, self.y), self.model, self.fimp_bounds, fset_without_f)
+                finder = RelationFinder([f], (self.X_onlyrelevant, self.y), self.model, self.fimp_bounds, fset_without_f)
                 relatives = finder.check_for_redundancies()
                 #relatives.remove(f)  # Remove self
                 self.related[f] = relatives

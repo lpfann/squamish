@@ -19,7 +19,6 @@ def _create_probe_statistic(probe_values, fpr):
     return low_t, up_t
 
 
-
 def add_NFeature_to_X(X, feature_i, random_state):
     X_copy = np.copy(X)
     # Permute selected feature
@@ -30,7 +29,7 @@ def add_NFeature_to_X(X, feature_i, random_state):
     return X_copy
 
 
-def _perm_scores(model, X, y, n_resampling, importances=False,random_state=None):
+def _perm_scores(model, X, y, n_resampling, importances=False, random_state=None):
     if random_state is None:
         random_state = np.random.RandomState()
 
@@ -50,8 +49,19 @@ def _perm_scores(model, X, y, n_resampling, importances=False,random_state=None)
             yield score,
 
 
-def get_significance_bounds(model, X, y, n_resampling=40, fpr=1e-4, importances=False,random_state=None):
-    sample_tuples = list(_perm_scores(model, X, y, n_resampling,importances=importances,random_state=random_state))
+def get_significance_bounds(
+    model, X, y, n_resampling=40, fpr=1e-4, importances=False, random_state=None
+):
+    sample_tuples = list(
+        _perm_scores(
+            model,
+            X,
+            y,
+            n_resampling,
+            importances=importances,
+            random_state=random_state,
+        )
+    )
 
     scores = [sc[0] for sc in sample_tuples]
     score_stat = _create_probe_statistic(scores, fpr)

@@ -61,8 +61,6 @@ def grouping(change_matrix, cutoff_threshold=0.55, method="single"):
 
     d = len(change_matrix)
 
-    
-
     # Calculate similarity using custom measure
     dist_mat = scipy.spatial.distance.pdist(feature_points, metric=distance)
 
@@ -150,4 +148,3 @@ def grouping_hdbscan(self, only_relevant=False, min_group_size=2):
     self.group_labels_ = labels
 
     return labels
-

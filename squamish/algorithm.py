@@ -27,9 +27,6 @@ def set_without_f(A, f):
     return C.astype(int)
 
 
-
-
-
 class FeatureSorter:
     PARAMS = {
         "max_depth": 5,
@@ -37,14 +34,14 @@ class FeatureSorter:
         "bagging_fraction": 0.632,
         "bagging_freq": 1,
         "importance_type": "gain",
-        "verbose": 0
+        "verbose": 0,
     }
-    #SPARSE_PARAMS = copy(PARAMS)
-    #SPARSE_PARAMS["feature_fraction"] = 1
+    # SPARSE_PARAMS = copy(PARAMS)
+    # SPARSE_PARAMS["feature_fraction"] = 1
     DENSE_PARAMS = copy(PARAMS)
     DENSE_PARAMS["feature_fraction"] = 0.1
 
-    def __init__(self, X, y, MR, AR,random_state):
+    def __init__(self, X, y, MR, AR, random_state):
         self.random_state = random_state
         self.X = X
         self.y = y
@@ -75,10 +72,14 @@ class FeatureSorter:
             print(f"W")
             return False
 
-    def create_null_stat(self,model):
+    def create_null_stat(self, model):
 
         self.score_bounds, imp_bounds_list = get_significance_bounds(
-            model, self.X_onlyrelevant, self.y, importances=True, random_state=self.random_state
+            model,
+            self.X_onlyrelevant,
+            self.y,
+            importances=True,
+            random_state=self.random_state,
         )
         print(f"score bounds: {self.score_bounds}")
         self.fimp_bounds = {}
@@ -89,11 +90,11 @@ class FeatureSorter:
         self.related = {}
         self.synergies = {}
 
-        if len(self.MR_and_W)==1:
-                # Only one feature, which should be str. relevant
-                self.S = self.MR
-                print("Only one feature")
-                return
+        if len(self.MR_and_W) == 1:
+            # Only one feature, which should be str. relevant
+            self.S = self.MR
+            print("Only one feature")
+            return
 
         for f in self.MR:
             print(f"------------------- Feature f:{f}")
@@ -102,7 +103,9 @@ class FeatureSorter:
             fset_without_f = set_without_f(self.MR_and_W, f)
 
             # Determine Relevance class by checking score without feature f
-            score_without_f = self.model.score_with_i_permuted(self.X_onlyrelevant, self.y, f,random_state=self.random_state)
+            score_without_f = self.model.score_with_i_permuted(
+                self.X_onlyrelevant, self.y, f, random_state=self.random_state
+            )
 
             significant = self.is_significant_score_deviation(score_without_f)
             if significant:
@@ -112,9 +115,15 @@ class FeatureSorter:
 
             # Record Importances with this subset of features
             if not significant:
-                finder = RelationFinder([f], (self.X_onlyrelevant, self.y), self.model, self.fimp_bounds, fset_without_f)
+                finder = RelationFinder(
+                    [f],
+                    (self.X_onlyrelevant, self.y),
+                    self.model,
+                    self.fimp_bounds,
+                    fset_without_f,
+                )
                 relatives = finder.check_for_redundancies()
-                #relatives.remove(f)  # Remove self
+                # relatives.remove(f)  # Remove self
                 self.related[f] = relatives
             # else:
             #     relatives = finder.check_for_synergies()
@@ -123,9 +132,9 @@ class FeatureSorter:
 
         self.related = filter_strongly(self.related, self.S)
         print("Related:", self.related)
-        #print("Synergies:", self.synergies)
-        print("S:",self.S)
-        print("W:",self.W)
+        # print("Synergies:", self.synergies)
+        print("S:", self.S)
+        print("W:", self.W)
 
 
 def print_scores_on_sets(AR, MR, MR_and_W, X, model, y):
@@ -210,4 +219,3 @@ class RelationFinder:
             if not lo <= imp <= hi:
                 cands.append(f_ix)
         return cands
-

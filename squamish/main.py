@@ -12,16 +12,19 @@ from squamish.algorithm import FeatureSorter
 import squamish.models as models
 from . import utils, plot
 
-class Main(BaseEstimator, SelectorMixin):
 
+class Main(BaseEstimator, SelectorMixin):
     def __init__(
-        self, problem="classification", params_boruta=None, params_iterative=None,
-        random_state=None
+        self,
+        problem="classification",
+        params_boruta=None,
+        params_iterative=None,
+        random_state=None,
     ):
         self.problem = problem
         if random_state is None:
-            random_state=np.random.RandomState()
-        self.random_state=random_state
+            random_state = np.random.RandomState()
+        self.random_state = random_state
 
     def _get_support_mask(self):
         return self.support_
@@ -30,14 +33,14 @@ class Main(BaseEstimator, SelectorMixin):
         X = scale(X)
         n, d = X.shape
 
-        AR, bor_score= models.fset_and_score(models.MyBoruta,X,y)
-        MR, self.score_ = models.fset_and_score(models.RF,X,y)
+        AR, bor_score = models.fset_and_score(models.MyBoruta, X, y)
+        MR, self.score_ = models.fset_and_score(models.RF, X, y)
 
         print(f"Features from Boruta:\n {AR}")
         print(f"Features from RF:\n {MR}")
 
         # Sort features iteratively into strongly (S) and weakly (W) sets
-        self.fsorter = FeatureSorter(X, y, MR, AR,self.random_state)
+        self.fsorter = FeatureSorter(X, y, MR, AR, self.random_state)
         self.fsorter.check_each_feature()
         # Turn index sets into support vector
         # (2 strong relevant,1 weak relevant, 0 irrelevant)
@@ -46,8 +49,8 @@ class Main(BaseEstimator, SelectorMixin):
 
         # Simple boolean vector where relevan features are regarded as one set (1 relevant, 0 irrelevant)
         self.support_ = self.relevance_classes_ > 0
-        #self.feature_importances_ = utils.compute_importances(importances)[1] # Take mean
-        #self.interval_ = utils.emulate_intervals(importances)
+        # self.feature_importances_ = utils.compute_importances(importances)[1] # Take mean
+        # self.interval_ = utils.emulate_intervals(importances)
 
     def plot(self, ticklabels=None):
         return plot.plot_model_intervals(self, ticklabels=ticklabels)

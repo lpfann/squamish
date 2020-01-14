@@ -111,19 +111,19 @@ class FeatureSorter:
 
             #
             # Record Importances with this subset of features
-            finder = RelationFinder([f], (self.X, self.y), self.model, self.fimp_bounds)
             if not significant:
-                relatives = finder.check_for_redundancies(fset_without_f)
+                finder = RelationFinder([f], (self.X, self.y), self.model, self.fimp_bounds, fset_without_f)
+                relatives = finder.check_for_redundancies()
                 #relatives.remove(f)  # Remove self
                 self.related[f] = relatives
-            else:
-                relatives = finder.check_for_synergies(fset_without_f)
-                if len(relatives)>0:
-                    self.synergies[f] = relatives
+            # else:
+            #     relatives = finder.check_for_synergies()
+            #     if len(relatives)>0:
+            #         self.synergies[f] = relatives
 
         self.related = filter_strongly(self.related, self.S)
         print("Related:", self.related)
-        print("Synergies:", self.synergies)
+        #print("Synergies:", self.synergies)
         print("S:",self.S)
         print("W:",self.W)
 
@@ -147,24 +147,18 @@ def filter_strongly(related, known_strongly):
 
 
 class RelationFinder:
-    def __init__(self, seen, data, model, importances_null_bounds):
+    def __init__(self, seen, data, model, importances_null_bounds, used_feature_ids):
         self.seen = seen
         self.data = data
         self.model = model
         self.importances_null_bounds = importances_null_bounds
+        self.feature_ids = used_feature_ids
 
-    def check_for_synergies(self, fset_without_f):
+    def check_for_redundancies(self):
         # Get importances together with feature index
-        importances = zip(fset_without_f, self.model.importances())
+        importances = zip(self.feature_ids, self.model.importances())
         # Find significantly different behaving features in this model
-        relatives = self.features_with_significant_negative_change(importances)
-        return relatives
-
-    def check_for_redundancies(self, fset_without_f):
-        # Get importances together with feature index
-        importances = zip(fset_without_f, self.model.importances())
-        # Find significantly different behaving features in this model
-        relatives = self.features_with_significant_positive_change(importances)
+        relatives = self.features_with_significant_change(importances)
         return relatives
 
     # def get_relatives(self, f, fset, prefit=False):
@@ -209,30 +203,11 @@ class RelationFinder:
     #
     #     return list(np.unique(rels))
 
-    def features_with_significant_change(self, importances_other):
+    def features_with_significant_change(self, f_ids_with_imp):
         cands = []
-        for f_ix, imp in importances_other:
-            # Check null distribution of pristine model without deleted features
+        for f_ix, imp in f_ids_with_imp:
             lo, hi = self.importances_null_bounds[f_ix]
-            if hi < imp or imp < lo:
+            if not lo <= imp <= hi:
                 cands.append(f_ix)
         return cands
 
-    def features_with_significant_negative_change(self, importances_other):
-        cands = []
-        for f_ix, imp in importances_other:
-            lo, _ = self.importances_null_bounds[f_ix]
-            if imp < lo:
-                cands.append(f_ix)
-        return cands
-
-    def features_with_significant_positive_change(self, importances_other):
-        cands = []
-        importances_other = list(importances_other)
-        print([imps[1] for imps in importances_other])
-        for f_ix, imp in importances_other:
-            _, hi = self.importances_null_bounds[f_ix]
-            if imp > hi:
-                print(f"feature:{f_ix}, imp:{imp} , upperb:{hi}")
-                cands.append(f_ix)
-        return cands

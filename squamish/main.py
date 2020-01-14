@@ -1,15 +1,11 @@
-import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
 from sklearn.base import BaseEstimator
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection.base import SelectorMixin
-from sklearn.model_selection import ParameterGrid
 from sklearn.preprocessing import scale
 
 from squamish.utils import create_support_AR
 from squamish.algorithm import FeatureSorter
-from . import utils, plot, models
+from . import models
 
 
 class Main(BaseEstimator, SelectorMixin):
@@ -50,6 +46,3 @@ class Main(BaseEstimator, SelectorMixin):
         self.support_ = self.relevance_classes_ > 0
         # self.feature_importances_ = utils.compute_importances(importances)[1] # Take mean
         # self.interval_ = utils.emulate_intervals(importances)
-
-    def plot(self, ticklabels=None):
-        return plot.plot_model_intervals(self, ticklabels=ticklabels)

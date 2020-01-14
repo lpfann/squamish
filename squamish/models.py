@@ -1,16 +1,11 @@
-from squamish.utils import reduced_data, cv_score, perm_i_in_X
 import lightgbm
 import numpy as np
-import pandas as pd
 import sklearn.feature_selection as fs
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import f1_score, precision_score, recall_score
-from sklearn.model_selection import ParameterGrid, cross_val_score
-from sklearn.preprocessing import scale
-from sklearn.feature_selection import mutual_info_classif, mutual_info_regression
-
-import boruta
 from boruta import BorutaPy
+from sklearn.model_selection import cross_val_score
+from sklearn.preprocessing import scale
+
+from squamish.utils import reduced_data, perm_i_in_X
 
 
 def get_relev_class_RFE(X, y, model, cv=5, random_state=None, params=None):

@@ -1,5 +1,5 @@
-from scipy import stats
 import numpy as np
+from scipy import stats
 
 
 def _create_probe_statistic(probe_values, fpr):

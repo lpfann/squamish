@@ -9,8 +9,7 @@ from sklearn.preprocessing import scale
 
 from squamish.utils import create_support_AR
 from squamish.algorithm import FeatureSorter
-import squamish.models as models
-from . import utils, plot
+from . import utils, plot, models
 
 
 class Main(BaseEstimator, SelectorMixin):

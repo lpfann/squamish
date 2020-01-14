@@ -51,9 +51,7 @@ class RF(Model):
         "boosting_type": "rf",
         "bagging_fraction": 0.632,
         "bagging_freq": 1,
-        "feature_fraction": 0.1,
-        # old setting?
-        #"feature_fraction": 0.5,
+        "feature_fraction": 0.8,
         "importance_type": "gain",
         "verbose": 0
     }
@@ -89,7 +87,7 @@ class MyBoruta(Model):
         "boosting_type": "rf",
         "bagging_fraction": 0.632,
         "bagging_freq": 1,
-        "feature_fraction": 0.1,
+        "feature_fraction": 0.1, # We force low feature fraction to reduce overshadowing of better redundant features
         "b_perc": 100,
         "verbose": 0,
         "verbose_eval": False,

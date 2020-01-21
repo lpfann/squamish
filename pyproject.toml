@@ -6,7 +6,7 @@ authors = ["Lukas Pfannschmidt <lukas@lpfann.me>"]
 
 [tool.poetry.dependencies]
 python = "^3.6"
-scikit-learn = "^0.21.3"
+scikit-learn = "^0"
 lightgbm = "^2.3.0"
 pandas = "^0.25.3"
 boruta = {git = "https://github.com/lpfann/boruta_py", rev = "fix_lightgbm_rs"}

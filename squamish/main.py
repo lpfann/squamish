@@ -11,7 +11,7 @@ import logging
 
 from .stat import Stats
 
-logging = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class Main(BaseEstimator):
@@ -19,9 +19,12 @@ class Main(BaseEstimator):
             self,
             problem="classification",
             random_state=None,
+            debug=False
     ):
         self.problem = problem
         self.random_state = check_random_state(random_state)
+        if debug:
+            logger.setLevel(logging.DEBUG)
 
     def _get_support_mask(self):
         return self.support_
@@ -39,17 +42,18 @@ class Main(BaseEstimator):
         # Fit a simple Random Forest to get a minimal feature subset
         m = models.RF(random_state=self.random_state).fit(X, y)
         self.score_ = m.cvscore(X, y)
-        logging.debug(f"RF score {self.score_}")
+        logger.debug(f"RF score {self.score_}")
+        logger.debug(f"importances {m.estimator.feature_importances_}")
         self.rfmodel = deepcopy(m)
 
-        self.stat_ = Stats(m, X, y, n_resampling=20, fpr=1e-4,
+        self.stat_ = Stats(m, X, y, n_resampling=40, fpr=1e-4,
                            random_state=self.random_state, check_importances=True)
         fset = m.fset(X, y, self.stat_)
         fset = np.where(fset)
         MR = fset[0]
 
-        logging.debug(f"Features from Boruta: {AR}")
-        logging.debug(f"Features from RF: {MR}")
+        logger.debug(f"Features from Boruta: {AR}")
+        logger.debug(f"Features from RF: {MR}")
 
         # Sort features iteratively into strongly (S) and weakly (W) sets
         self.fsorter = FeatureSorter(X, y, MR, AR, self.random_state, self.stat_)
@@ -60,7 +64,7 @@ class Main(BaseEstimator):
         # (2 strong relevant,1 weak relevant, 0 irrelevant)
         all_rel_support = create_support_AR(d, self.fsorter.S, self.fsorter.W)
         self.relevance_classes_ = all_rel_support
-        logging.info(f"Relevance Classes: {self.relevance_classes_}")
+        logger.info(f"Relevance Classes: {self.relevance_classes_}")
         # Simple boolean vector where relevan features are regarded as one set (1 relevant, 0 irrelevant)
         self.support_ = self.relevance_classes_ > 0
 

@@ -57,7 +57,7 @@ class Stats:
 
             shadowimps = [sc[2] for sc in samples]
             self.shadow_stat = _create_probe_statistic(shadowimps, fpr)
-            logging.info(f"Shadow Bounds:{self.shadow_stat}")
+            logging.debug(f"Shadow Bounds:{self.shadow_stat}")
 
     def generate_samples(self):
 

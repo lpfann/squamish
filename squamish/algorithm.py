@@ -4,9 +4,11 @@ import numpy as np
 from sklearn.preprocessing import scale
 
 from squamish.models import RF
+from squamish.stat import Stats
 from squamish.utils import reduced_data
 import logging
-logging = logging.getLogger(__name__)
+
+logger = logging.getLogger(__name__)
 
 def combine_sets(A, B):
     C = np.union1d(A, B)  # Combine with weakly relevant features
@@ -26,9 +28,9 @@ class FeatureSorter:
         "bagging_fraction": 0.632,
         "bagging_freq": 1,
         "importance_type": "gain",
-        "subsample":None,
-        "subsample_freq":None,
-        "colsample_bytree":None,
+        "subsample": None,
+        "subsample_freq": None,
+        "colsample_bytree": None,
         "verbose": -1,
     }
     # SPARSE_PARAMS = copy(PARAMS)
@@ -36,7 +38,9 @@ class FeatureSorter:
     DENSE_PARAMS = copy(PARAMS)
     DENSE_PARAMS["feature_fraction"] = 0.1
 
-    def __init__(self, X, y, MR, AR, random_state, statistics):
+    def __init__(self, X, y, MR, AR, random_state, statistics, debug=False):
+        if debug:
+            logger.setLevel(logging.DEBUG)
         self.random_state = random_state
         self.X = X
         self.y = y
@@ -47,7 +51,7 @@ class FeatureSorter:
         self.MR_and_W = combine_sets(MR, self.W)
         self.X_onlyrelevant = reduced_data(X, self.MR_and_W)
         self.X_onlyrelevant = scale(self.X_onlyrelevant)
-        logging.debug(f"predetermined weakly {self.W}")
+        logger.debug(f"predetermined weakly {self.W}")
 
         self.model = RF(random_state=self.random_state, **self.DENSE_PARAMS)
         # print_scores_on_sets(AR, MR, self.MR_and_W, X, self.model, y)
@@ -55,7 +59,7 @@ class FeatureSorter:
         self.score_bounds = statistics.score_stat
         imp_bounds_list = statistics.imp_stat
 
-        logging.debug(f"score bounds: {self.score_bounds}")
+        logger.debug(f"score bounds: {self.score_bounds}")
         self.fimp_bounds = {}
         for f_ix, imp in zip(self.MR_and_W, imp_bounds_list):
             self.fimp_bounds[f_ix] = imp
@@ -66,10 +70,10 @@ class FeatureSorter:
         # i.e. no signif. change compared to perm. feature
         # __We only check lower dist bound for worsening score when f is removed -> Strong relevant
         if score_without_f < self.score_bounds[0]:
-            logging.debug(f"removal_score:{score_without_f:.3}-> S")
+            logger.debug(f"removal_score:{score_without_f:.3}-> S")
             return True
         else:
-            logging.debug(f"removal_score:{score_without_f:.3}-> W")
+            logger.debug(f"removal_score:{score_without_f:.3}-> W")
             return False
 
     def check_each_feature(self):
@@ -79,11 +83,11 @@ class FeatureSorter:
         if len(self.MR_and_W) == 1:
             # Only one feature, which should be str. relevant
             self.S = self.MR
-            logging.debug("Only one feature")
+            logger.debug("Only one feature")
             return
 
         for f in self.MR:
-            logging.debug(f"------------------- Feature f:{f}")
+            logger.debug(f"------------------- Feature f:{f}")
 
             # Remove feature f from MR u W
             fset_without_f = set_without_f(self.MR_and_W, f)
@@ -93,7 +97,7 @@ class FeatureSorter:
             score_without_f = self.model.score_with_i_permuted(
                 self.X_onlyrelevant, self.y, rel_f_ix, random_state=self.random_state
             )
-
+            logger.debug(f"score without {f}: {score_without_f}")
             significant = self.is_significant_score_deviation(score_without_f)
             if significant:
                 self.S.append(f)
@@ -118,10 +122,10 @@ class FeatureSorter:
             #         self.synergies[f] = relatives
 
         self.related = filter_strongly(self.related, self.S)
-        logging.debug(f"Related: {self.related}")
+        logger.debug(f"Related: {self.related}")
         # print("Synergies:", self.synergies)
-        logging.debug(f"S: {self.S}")
-        logging.debug(f"W: {self.W}")
+        logger.debug(f"S: {self.S}")
+        logger.debug(f"W: {self.W}")
 
 
 def print_scores_on_sets(AR, MR, MR_and_W, X, model, y):
@@ -129,11 +133,11 @@ def print_scores_on_sets(AR, MR, MR_and_W, X, model, y):
     score_on_AR = model.redscore(X, y, AR)
     score_on_MR_and_W = model.redscore(X, y, MR_and_W)
     normal_imps = model.importances()
-    logging.debug(f"normal_imps:{normal_imps}")
-    logging.debug(f"length MR and W {len(MR_and_W)}")
+    logger.debug(f"normal_imps:{normal_imps}")
+    logger.debug(f"length MR and W {len(MR_and_W)}")
     scores = {"MR": score_on_MR, "AR": score_on_AR, "MR+W": score_on_MR_and_W}
     for k, sc in scores.items():
-        logging.debug(f"{k} has score {sc}")
+        logger.debug(f"{k} has score {sc}")
 
 
 def filter_strongly(related, known_strongly):

@@ -21,12 +21,15 @@ def set_without_f(A, f):
 
 class FeatureSorter:
     PARAMS = {
-        "max_depth": 5,
+        #"max_depth": 5,
         "boosting_type": "rf",
         "bagging_fraction": 0.632,
         "bagging_freq": 1,
         "importance_type": "gain",
-        "verbose": 0,
+        "subsample":None,
+        "subsample_freq":None,
+        "colsample_bytree":None,
+        "verbose": -1,
     }
     # SPARSE_PARAMS = copy(PARAMS)
     # SPARSE_PARAMS["feature_fraction"] = 1
@@ -46,7 +49,7 @@ class FeatureSorter:
         self.X_onlyrelevant = scale(self.X_onlyrelevant)
         print(f"predetermined weakly {self.W}")
 
-        self.model = RF(params=self.DENSE_PARAMS)
+        self.model = RF(**self.DENSE_PARAMS)
         print_scores_on_sets(AR, MR, self.MR_and_W, X, self.model, y)
 
         self.create_null_stat(self.model)
@@ -95,8 +98,9 @@ class FeatureSorter:
             fset_without_f = set_without_f(self.MR_and_W, f)
 
             # Determine Relevance class by checking score without feature f
+            rel_f_ix = np.where(self.MR_and_W==f)[0]
             score_without_f = self.model.score_with_i_permuted(
-                self.X_onlyrelevant, self.y, f, random_state=self.random_state
+                self.X_onlyrelevant, self.y, rel_f_ix, random_state=self.random_state
             )
 
             significant = self.is_significant_score_deviation(score_without_f)

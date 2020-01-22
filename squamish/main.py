@@ -38,8 +38,8 @@ class Main(BaseEstimator, SelectorMixin):
         MR =  fset[0]
         self.rfmodel = m
 
-        logging.info(f"Features from Boruta:\n {AR}")
-        logging.info(f"Features from RF:\n {MR}")
+        logging.info(f"Features from Boruta: {AR}")
+        logging.info(f"Features from RF: {MR}")
 
         # Sort features iteratively into strongly (S) and weakly (W) sets
         self.fsorter = FeatureSorter(X, y, MR, AR, self.random_state)
@@ -51,6 +51,7 @@ class Main(BaseEstimator, SelectorMixin):
 
         # Simple boolean vector where relevan features are regarded as one set (1 relevant, 0 irrelevant)
         self.support_ = self.relevance_classes_ > 0
+        
         # self.feature_importances_ = utils.compute_importances(importances)[1] # Take mean
         # self.interval_ = utils.emulate_intervals(importances)
     

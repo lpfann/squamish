@@ -4,7 +4,6 @@ import numpy as np
 from sklearn.preprocessing import scale
 
 from squamish.models import RF
-from squamish.stat import get_significance_bounds
 from squamish.utils import reduced_data
 import logging
 logging = logging.getLogger(__name__)
@@ -37,7 +36,7 @@ class FeatureSorter:
     DENSE_PARAMS = copy(PARAMS)
     DENSE_PARAMS["feature_fraction"] = 0.1
 
-    def __init__(self, X, y, MR, AR, random_state):
+    def __init__(self, X, y, MR, AR, random_state, statistics):
         self.random_state = random_state
         self.X = X
         self.y = y
@@ -48,12 +47,18 @@ class FeatureSorter:
         self.MR_and_W = combine_sets(MR, self.W)
         self.X_onlyrelevant = reduced_data(X, self.MR_and_W)
         self.X_onlyrelevant = scale(self.X_onlyrelevant)
-        logging.info(f"predetermined weakly {self.W}")
+        logging.debug(f"predetermined weakly {self.W}")
 
         self.model = RF(**self.DENSE_PARAMS)
-        print_scores_on_sets(AR, MR, self.MR_and_W, X, self.model, y)
+        # print_scores_on_sets(AR, MR, self.MR_and_W, X, self.model, y)
 
-        self.create_null_stat(self.model)
+        self.score_bounds = statistics.score_stat
+        imp_bounds_list = statistics.imp_stat
+
+        logging.debug(f"score bounds: {self.score_bounds}")
+        self.fimp_bounds = {}
+        for f_ix, imp in zip(self.MR_and_W, imp_bounds_list):
+            self.fimp_bounds[f_ix] = imp
 
     def is_significant_score_deviation(self, score_without_f):
         # check score if f is removed
@@ -66,20 +71,6 @@ class FeatureSorter:
         else:
             logging.debug(f"removal_score:{score_without_f:.3}-> W")
             return False
-
-    def create_null_stat(self, model):
-
-        self.score_bounds, imp_bounds_list = get_significance_bounds(
-            model,
-            self.X_onlyrelevant,
-            self.y,
-            importances=True,
-            random_state=self.random_state,
-        )
-        logging.debug(f"score bounds: {self.score_bounds}")
-        self.fimp_bounds = {}
-        for f_ix, imp in zip(self.MR_and_W, imp_bounds_list):
-            self.fimp_bounds[f_ix] = imp
 
     def check_each_feature(self):
         self.related = {}
@@ -127,10 +118,10 @@ class FeatureSorter:
             #         self.synergies[f] = relatives
 
         self.related = filter_strongly(self.related, self.S)
-        logging.info(f"Related: {self.related}")
+        logging.debug(f"Related: {self.related}")
         # print("Synergies:", self.synergies)
-        logging.info(f"S: {self.S}")
-        logging.info(f"W: {self.W}")
+        logging.debug(f"S: {self.S}")
+        logging.debug(f"W: {self.W}")
 
 
 def print_scores_on_sets(AR, MR, MR_and_W, X, model, y):

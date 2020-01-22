@@ -3,7 +3,7 @@ from unittest import TestCase
 from sklearn.datasets import make_classification
 import pytest
 
-from squamish.stat import add_NFeature_to_X, get_significance_bounds
+from squamish.stat import add_NFeature_to_X, Stats
 
 from sklearn.linear_model import LassoLarsCV
 
@@ -21,6 +21,7 @@ def test():
     model = LassoLarsCV(cv=5)
     assert model.fit(X_NF, y).score(X_NF, y) > 0.5
 
-    bounds = get_significance_bounds(model, X, y, n_resampling=50, fpr=1e-3)
+    stats = Stats(model, X, y, n_resampling=50, fpr=1e-3, check_importances=False)
+    bounds = stats.score_stat
     assert type(bounds) is tuple
     assert bounds[0] < normal_score < bounds[1]

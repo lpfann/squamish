@@ -6,12 +6,21 @@ from sklearn.model_selection import cross_val_score
 from sklearn.preprocessing import scale
 from sklearn.utils import check_random_state
 from squamish.utils import reduced_data, perm_i_in_X
+import logging
+
+logging = logging.getLogger(__name__)
+
 
 def get_relev_class_RFE(X, y, model, cv=5, random_state=None, params=None):
     rfc = fs.RFECV(model, cv=cv)
     rfc.fit(X, y)
     return rfc.support_.astype(int)
 
+
+def get_relev_class_SFM(X, y, model):
+    sfm = fs.SelectFromModel(model, prefit=True, threshold="2*mean")
+    # rfc.fit(X, y)
+    return sfm.get_support().astype(int)
 
 class Model:
     def __init__(self):
@@ -51,7 +60,6 @@ class RF(Model):
         "subsample":None,
         "subsample_freq":None,
         "colsample_bytree":None,
-
         "importance_type": "gain",
         "verbose": -1,
     }
@@ -64,10 +72,23 @@ class RF(Model):
         self.estimator = lightgbm.LGBMClassifier(random_state=self.random_state.randint(10000),**params)
         self.fset_ = None
 
-    def fset(self, X, y):
+    def fset(self, X, y, stats):
         if hasattr(self.estimator, "feature_importances_"):
             if self.fset_ is None:
-                self.fset_ = get_relev_class_RFE(X, y, self.estimator)
+                # d = X.shape[1]
+                # if d > d_thresh:
+                #     self.fset_ = get_relev_class_SFM(X,y,self.estimator)
+                # else:
+                #     self.fset_ = get_relev_class_SFM(X,y,self.estimator)
+                #     logging.info(f"SFM SET: {self.fset_}")
+                #     self.fset_ = get_relev_class_RFE(X, y, self.estimator)
+                #     logging.info(f"RFE SET: {self.fset_}")
+                lo_bound, hi_bound = stats.shadow_stat
+                bigger_than_shadow_bound = self.estimator.feature_importances_ > hi_bound
+                self.fset_ = bigger_than_shadow_bound.astype(int)
+                # logging.debug(f"Shadow SET: {self.fset_}")
+                # self.fset_ = get_relev_class_RFE(X, y, self.estimator)
+                #logging.info(f"RFE SET: {self.fset_}")
             return self.fset_
         else:
             raise Exception("Model has no fset_ yet. Not fitted?")
@@ -134,11 +155,3 @@ class MyBoruta(Model):
     def cvscore(self, X, y, cv=5):
         estimator = self.estimator.estimator  # use inner RF
         return np.mean(cross_val_score(estimator, X, y, cv=cv))
-
-
-def fset_and_score(model: Model, X, y,random_state=None,  **params):
-    m = model(random_state=random_state,**params).fit(X, y)
-    score = m.cvscore(X, y)
-    fset = m.fset(X, y)
-    fset = np.where(fset)
-    return fset[0], score

@@ -1,5 +1,10 @@
 import numpy as np
 from scipy import stats
+from sklearn.utils import check_random_state
+
+import logging
+
+logging = logging.getLogger(__name__)
 
 
 def _create_probe_statistic(probe_values, fpr):
@@ -29,47 +34,48 @@ def add_NFeature_to_X(X, feature_i, random_state):
     return X_copy
 
 
-def _perm_scores(model, X, y, n_resampling, importances=False, random_state=None):
-    if random_state is None:
-        random_state = np.random.RandomState()
+class Stats:
 
-    # Random sample n_resampling shadow features by permuting real features
-    random_choice = random_state.choice(a=X.shape[1], size=n_resampling)
+    def __init__(self, model, X, y, n_resampling=40, fpr=1e-4, random_state=None,
+                 check_importances=True):
+        self.model = model
+        self.X = X
+        self.y = y
+        self.n_resampling = n_resampling
+        self.fpr = fpr
+        self.random_state = check_random_state(random_state)
+        self.check_importances = check_importances
 
-    # Instantiate objects
-    for di in random_choice:
-        X_NF = add_NFeature_to_X(X, di, random_state)
-        model.fit(X_NF, y)
-        score = model.score(X_NF, y)
-        if importances:
-            # Only get values of non-permutated features
-            imps = model.importances()[:-1]
-            yield score, imps
-        else:
-            yield score,
+        samples = self.generate_samples()
 
+        scores = [sc[0] for sc in samples]
+        self.score_stat = _create_probe_statistic(scores, fpr)
+        if check_importances:
+            imps = np.array([sc[1] for sc in samples]).T
+            # Iterate over columns of matrix, column corresponds to all samples for 1 feature
+            self.imp_stat = [_create_probe_statistic(col, fpr) for col in imps]
 
-def get_significance_bounds(
-    model, X, y, n_resampling=40, fpr=1e-4, importances=False, random_state=None
-):
-    sample_tuples = list(
-        _perm_scores(
-            model,
-            X,
-            y,
-            n_resampling,
-            importances=importances,
-            random_state=random_state,
-        )
-    )
+            shadowimps = [sc[2] for sc in samples]
+            self.shadow_stat = _create_probe_statistic(shadowimps, fpr)
+            logging.info(f"Shadow Bounds:{self.shadow_stat}")
 
-    scores = [sc[0] for sc in sample_tuples]
-    score_stat = _create_probe_statistic(scores, fpr)
-    if importances:
-        imps = np.array([sc[1] for sc in sample_tuples]).T
-        # Iterate over columns of matrix, column corresponds to all samples for 1 feature
-        imp_stat = [_create_probe_statistic(col, fpr) for col in imps]
+    def generate_samples(self):
 
-        return score_stat, imp_stat
-    else:
-        return score_stat
+        # Random sample n_resampling shadow features by permuting real features
+        random_choice = self.random_state.choice(a=self.X.shape[1],
+                                                 size=self.n_resampling)
+
+        # Instantiate objects
+        samples = []
+        for di in random_choice:
+            X_NF = add_NFeature_to_X(self.X, di, self.random_state)
+            self.model.fit(X_NF, self.y)
+            score = self.model.score(X_NF, self.y)
+            if not self.check_importances:
+                samples.append((score,))
+            else:
+                # Only get values of non-permutated features
+                imps = self.model.importances()[:-1]
+                shadowimp = self.model.importances()[-1]
+                samples.append((score, imps, shadowimp))
+        return samples

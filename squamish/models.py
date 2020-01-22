@@ -4,7 +4,7 @@ import sklearn.feature_selection as fs
 from boruta import BorutaPy
 from sklearn.model_selection import cross_val_score
 from sklearn.preprocessing import scale
-
+from sklearn.utils import check_random_state
 from squamish.utils import reduced_data, perm_i_in_X
 
 
@@ -15,9 +15,10 @@ def get_relev_class_RFE(X, y, model, cv=5, random_state=None, params=None):
 
 
 class Model:
-    def __init__(self, model, **params):
-        self.estimator = model(**params)
+    def __init__(self):
+        self.estimator = None
         self.fset_ = None
+        self.random_state = None
 
     def fit(self, X, y):
         X = scale(X)
@@ -42,19 +43,27 @@ class Model:
 
 class RF(Model):
     BEST_PARAMS = {
+        "num_leaves":32,
         "max_depth": 5,
         "boosting_type": "rf",
         "bagging_fraction": 0.632,
         "bagging_freq": 1,
         "feature_fraction": 0.8,
+        "subsample":None,
+        "subsample_freq":None,
+        "colsample_bytree":None,
+
         "importance_type": "gain",
-        "verbose": 0,
+        "verbose": -1,
     }
 
-    def __init__(self, params=None):
+    def __init__(self, random_state=None, **params):
         if params is None:
             params = self.BEST_PARAMS
-        super().__init__(lightgbm.LGBMClassifier, **params)
+        self.random_state = check_random_state(random_state)
+        
+        self.estimator = lightgbm.LGBMClassifier(random_state=self.random_state.randint(10000),**params)
+        self.fset_ = None
 
     def fset(self, X, y):
         if hasattr(self.estimator, "feature_importances_"):
@@ -75,25 +84,30 @@ class RF(Model):
         X_c = scale(X_c)
         self.estimator.fit(X_c, y)
         return self.score(X_c, y)
-
+    
+    def predict(self, X):
+        return self.estimator.predict(X)
 
 class MyBoruta(Model):
     BEST_PARAMS_BORUTA = {
+        "num_leaves":32,
         "max_depth": 5,
         "boosting_type": "rf",
         "bagging_fraction": 0.632,
         "bagging_freq": 1,
         "feature_fraction": 0.1,  # We force low feature fraction to reduce overshadowing of better redundant features
         "b_perc": 100,
-        "verbose": 0,
-        "verbose_eval": False,
+        "subsample":None,
+        "subsample_freq":None,
+        "verbose": -1,
+        "colsample_bytree":None,
         "b_n_estimators": "auto",
         "b_alpha": 0.01,
         "b_max_iter": 100,
         "importance_type": "gain",
     }
 
-    def __init__(self, params=None):
+    def __init__(self, random_state=None, params=None):
         if params is None:
             tree_params = {
                 k: v
@@ -108,9 +122,9 @@ class MyBoruta(Model):
         else:
             tree_params = None
             boruta_params = None
-        print(tree_params)
+        self.random_state = check_random_state(random_state)
         lm = lightgbm.LGBMClassifier(**tree_params)
-        self.estimator = BorutaPy(lm, verbose=0, random_state=1, **boruta_params)
+        self.estimator = BorutaPy(lm, verbose=0, random_state=self.random_state, **boruta_params)
 
     def fset(self, X, y):
         if hasattr(self.estimator, "support_"):
@@ -123,8 +137,8 @@ class MyBoruta(Model):
         return np.mean(cross_val_score(estimator, X, y, cv=cv))
 
 
-def fset_and_score(model: Model, X, y, params=None):
-    m = model(params).fit(X, y)
+def fset_and_score(model: Model, X, y,random_state=None,  **params):
+    m = model(random_state=random_state,**params).fit(X, y)
     score = m.cvscore(X, y)
     fset = m.fset(X, y)
     fset = np.where(fset)

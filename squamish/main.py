@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.base import BaseEstimator
 from sklearn.feature_selection.base import SelectorMixin
 from sklearn.preprocessing import scale
-
+from sklearn.utils import check_random_state
 from squamish.utils import create_support_AR
 from squamish.algorithm import FeatureSorter
 from . import models
@@ -17,9 +17,7 @@ class Main(BaseEstimator, SelectorMixin):
         random_state=None,
     ):
         self.problem = problem
-        if random_state is None:
-            random_state = np.random.RandomState()
-        self.random_state = random_state
+        self.random_state = check_random_state(random_state)
 
     def _get_support_mask(self):
         return self.support_
@@ -28,8 +26,15 @@ class Main(BaseEstimator, SelectorMixin):
         X = scale(X)
         n, d = X.shape
 
-        AR, bor_score = models.fset_and_score(models.MyBoruta, X, y)
-        MR, self.score_ = models.fset_and_score(models.RF, X, y)
+        # All relevant set using boruta
+        AR, bor_score = models.fset_and_score(models.MyBoruta, X, y,random_state=self.random_state)
+
+        m = models.RF(random_state=self.random_state).fit(X, y)
+        self.score_ = m.cvscore(X, y)
+        fset = m.fset(X, y)
+        fset = np.where(fset)
+        MR =  fset[0]
+        self.rfmodel = m
 
         print(f"Features from Boruta:\n {AR}")
         print(f"Features from RF:\n {MR}")
@@ -46,3 +51,9 @@ class Main(BaseEstimator, SelectorMixin):
         self.support_ = self.relevance_classes_ > 0
         # self.feature_importances_ = utils.compute_importances(importances)[1] # Take mean
         # self.interval_ = utils.emulate_intervals(importances)
+    
+    def score(self,X, y):
+        return self.rfmodel.score(X,y)
+
+    def predict(self,X):
+        return self.rfmodel.predict(X)

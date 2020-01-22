@@ -7,6 +7,7 @@ from squamish.utils import create_support_AR
 from squamish.algorithm import FeatureSorter
 from . import models
 import logging
+logging = logging.getLogger(__name__)
 
 class Main(BaseEstimator, SelectorMixin):
     def __init__(

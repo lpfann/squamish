@@ -7,6 +7,7 @@ from squamish.models import RF
 from squamish.stat import get_significance_bounds
 from squamish.utils import reduced_data
 import logging
+logging = logging.getLogger(__name__)
 
 def combine_sets(A, B):
     C = np.union1d(A, B)  # Combine with weakly relevant features

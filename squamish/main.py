@@ -6,7 +6,7 @@ from sklearn.utils import check_random_state
 from squamish.utils import create_support_AR
 from squamish.algorithm import FeatureSorter
 from . import models
-
+import logging
 
 class Main(BaseEstimator, SelectorMixin):
     def __init__(
@@ -28,16 +28,17 @@ class Main(BaseEstimator, SelectorMixin):
 
         # All relevant set using boruta
         AR, bor_score = models.fset_and_score(models.MyBoruta, X, y,random_state=self.random_state)
-
         m = models.RF(random_state=self.random_state).fit(X, y)
         self.score_ = m.cvscore(X, y)
+        logging.info(f"RF score {self.score_}")
+
         fset = m.fset(X, y)
         fset = np.where(fset)
         MR =  fset[0]
         self.rfmodel = m
 
-        print(f"Features from Boruta:\n {AR}")
-        print(f"Features from RF:\n {MR}")
+        logging.info(f"Features from Boruta:\n {AR}")
+        logging.info(f"Features from RF:\n {MR}")
 
         # Sort features iteratively into strongly (S) and weakly (W) sets
         self.fsorter = FeatureSorter(X, y, MR, AR, self.random_state)

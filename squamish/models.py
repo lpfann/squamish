@@ -7,7 +7,6 @@ from sklearn.preprocessing import scale
 from sklearn.utils import check_random_state
 from squamish.utils import reduced_data, perm_i_in_X
 
-
 def get_relev_class_RFE(X, y, model, cv=5, random_state=None, params=None):
     rfc = fs.RFECV(model, cv=cv)
     rfc.fit(X, y)

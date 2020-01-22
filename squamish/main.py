@@ -46,7 +46,7 @@ class Main(BaseEstimator):
         logger.debug(f"importances {m.estimator.feature_importances_}")
         self.rfmodel = deepcopy(m)
 
-        self.stat_ = Stats(m, X, y, n_resampling=40, fpr=1e-4,
+        self.stat_ = Stats(m, X, y, n_resampling=50, fpr=1e-4,
                            random_state=self.random_state, check_importances=True)
         fset = m.fset(X, y, self.stat_)
         fset = np.where(fset)

@@ -36,7 +36,7 @@ def add_NFeature_to_X(X, feature_i, random_state):
 
 class Stats:
 
-    def __init__(self, model, X, y, n_resampling=40, fpr=1e-4, random_state=None,
+    def __init__(self, model, X, y, n_resampling=50, fpr=1e-4, random_state=None,
                  check_importances=True):
         self.model = model
         self.X = X

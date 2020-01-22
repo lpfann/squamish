@@ -18,8 +18,6 @@ class Main(BaseEstimator):
     def __init__(
             self,
             problem="classification",
-            params_boruta=None,
-            params_iterative=None,
             random_state=None,
     ):
         self.problem = problem
@@ -41,17 +39,17 @@ class Main(BaseEstimator):
         # Fit a simple Random Forest to get a minimal feature subset
         m = models.RF(random_state=self.random_state).fit(X, y)
         self.score_ = m.cvscore(X, y)
-        logging.info(f"RF score {self.score_}")
-        logging.info(m.estimator.feature_importances_)
+        logging.debug(f"RF score {self.score_}")
         self.rfmodel = deepcopy(m)
 
-        self.stat_ = Stats(m, X, y, n_resampling=20, fpr=1e-4, check_importances=True)
+        self.stat_ = Stats(m, X, y, n_resampling=20, fpr=1e-4,
+                           random_state=self.random_state, check_importances=True)
         fset = m.fset(X, y, self.stat_)
         fset = np.where(fset)
         MR = fset[0]
 
-        logging.info(f"Features from Boruta: {AR}")
-        logging.info(f"Features from RF: {MR}")
+        logging.debug(f"Features from Boruta: {AR}")
+        logging.debug(f"Features from RF: {MR}")
 
         # Sort features iteratively into strongly (S) and weakly (W) sets
         self.fsorter = FeatureSorter(X, y, MR, AR, self.random_state, self.stat_)

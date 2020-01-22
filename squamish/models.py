@@ -69,7 +69,8 @@ class RF(Model):
             params = self.BEST_PARAMS
         self.random_state = check_random_state(random_state)
         
-        self.estimator = lightgbm.LGBMClassifier(random_state=self.random_state.randint(10000),**params)
+        self.estimator = lightgbm.LGBMClassifier(
+            random_state=self.random_state.randint(1e6), **params)
         self.fset_ = None
 
     def fset(self, X, y, stats):
@@ -143,8 +144,10 @@ class MyBoruta(Model):
             tree_params = None
             boruta_params = None
         self.random_state = check_random_state(random_state)
-        lm = lightgbm.LGBMClassifier(**tree_params)
-        self.estimator = BorutaPy(lm, verbose=0, random_state=self.random_state, **boruta_params)
+        lm = lightgbm.LGBMClassifier(random_state=self.random_state.randint(1e6),
+                                     **tree_params, )
+        self.estimator = BorutaPy(lm, verbose=0, random_state=self.random_state,
+                                  **boruta_params)
 
     def fset(self, X, y):
         if hasattr(self.estimator, "support_"):

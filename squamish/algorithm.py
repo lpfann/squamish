@@ -49,7 +49,7 @@ class FeatureSorter:
         self.X_onlyrelevant = scale(self.X_onlyrelevant)
         logging.debug(f"predetermined weakly {self.W}")
 
-        self.model = RF(**self.DENSE_PARAMS)
+        self.model = RF(random_state=self.random_state, **self.DENSE_PARAMS)
         # print_scores_on_sets(AR, MR, self.MR_and_W, X, self.model, y)
 
         self.score_bounds = statistics.score_stat

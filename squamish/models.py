@@ -57,20 +57,21 @@ class RF(Model):
         "bagging_fraction": 0.632,
         "bagging_freq": 1,
         "feature_fraction": 0.8,
-        "subsample":None,
-        "subsample_freq":None,
-        "colsample_bytree":None,
+        "subsample": None,
+        "subsample_freq": None,
+        "colsample_bytree": None,
         "importance_type": "gain",
         "verbose": -1,
     }
 
-    def __init__(self, random_state=None, **params):
+    def __init__(self, random_state=None, n_jobs=-1, **params):
+        self.n_jobs = n_jobs
         if params is None:
             params = self.BEST_PARAMS
         self.random_state = check_random_state(random_state)
-        
+
         self.estimator = lightgbm.LGBMClassifier(
-            random_state=self.random_state.randint(1e6), **params)
+            random_state=self.random_state.randint(1e6), n_jobs=self.n_jobs, **params)
         self.fset_ = None
 
     def fset(self, X, y, stats):
@@ -118,17 +119,18 @@ class MyBoruta(Model):
         "bagging_freq": 1,
         "feature_fraction": 0.1,  # We force low feature fraction to reduce overshadowing of better redundant features
         "b_perc": 100,
-        "subsample":None,
-        "subsample_freq":None,
+        "subsample": None,
+        "subsample_freq": None,
         "verbose": -1,
-        "colsample_bytree":None,
+        "colsample_bytree": None,
         "b_n_estimators": "auto",
         "b_alpha": 0.01,
         "b_max_iter": 100,
         "importance_type": "gain",
     }
 
-    def __init__(self, random_state=None, params=None):
+    def __init__(self, random_state=None, n_jobs=-1, params=None):
+        self.n_jobs = n_jobs
         if params is None:
             tree_params = {
                 k: v
@@ -145,6 +147,7 @@ class MyBoruta(Model):
             boruta_params = None
         self.random_state = check_random_state(random_state)
         lm = lightgbm.LGBMClassifier(random_state=self.random_state.randint(1e6),
+                                     n_jobs=self.n_jobs,
                                      **tree_params, )
         self.estimator = BorutaPy(lm, verbose=0, random_state=self.random_state,
                                   **boruta_params)

@@ -19,8 +19,10 @@ class Main(BaseEstimator):
             self,
             problem="classification",
             random_state=None,
-            debug=False
+            n_jobs=-1,
+            debug=True
     ):
+        self.n_jobs = n_jobs
         self.problem = problem
         self.random_state = check_random_state(random_state)
         if debug:
@@ -34,13 +36,14 @@ class Main(BaseEstimator):
         n, d = X.shape
 
         # All relevant set using Boruta
-        m = models.MyBoruta(random_state=self.random_state).fit(X, y)
+        m = models.MyBoruta(random_state=self.random_state, n_jobs=self.n_jobs).fit(X,
+                                                                                    y)
         # bor_score = m.cvscore(X, y)
         fset = m.fset(X, y)
         AR = np.where(fset)[0]
 
         # Fit a simple Random Forest to get a minimal feature subset
-        m = models.RF(random_state=self.random_state).fit(X, y)
+        m = models.RF(random_state=self.random_state, n_jobs=self.n_jobs).fit(X, y)
         self.score_ = m.cvscore(X, y)
         logger.debug(f"RF score {self.score_}")
         logger.debug(f"importances {m.estimator.feature_importances_}")
@@ -56,7 +59,8 @@ class Main(BaseEstimator):
         logger.debug(f"Features from RF: {MR}")
 
         # Sort features iteratively into strongly (S) and weakly (W) sets
-        self.fsorter = FeatureSorter(X, y, MR, AR, self.random_state, self.stat_)
+        self.fsorter = FeatureSorter(X, y, MR, AR, self.random_state, self.stat_,
+                                     n_jobs=self.n_jobs)
         self.fsorter.check_each_feature()
         self.relations_ = self.fsorter.related
 

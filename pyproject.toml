@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "squamish"
-version = "0.1.0"
-description = ""
+version = "0.2.0"
+description = "Feature Classification and Relation Tool"
 authors = ["Lukas Pfannschmidt <lukas@lpfann.me>"]
 
 [tool.poetry.dependencies]

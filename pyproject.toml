@@ -8,7 +8,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.6"
-scikit-learn = "^0"
+scikit-learn = "^0.22"
 lightgbm = "^2.3.0"
 pandas = "^0.25.3"
 boruta = {git = "https://github.com/lpfann/boruta_py", rev = "fix_lightgbm_rs"}
@@ -28,7 +28,7 @@ jupyter-lsp = "^0.6.0-beta.0"
 
 [tool.black]
 line-length = 88
-target-version = ['py36', 'py37']
+target-version = ['py36', 'py37', 'py38']
 
 [build-system]
 requires = ["poetry>=0.12"]

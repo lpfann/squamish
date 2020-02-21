@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from fri import genClassificationData
+from arfs_gen import genClassificationData
 from sklearn.datasets import make_classification
 import pytest
 

@@ -7,7 +7,7 @@ from squamish.stat import add_NFeature_to_X, Stats
 
 from sklearn.linear_model import LassoLarsCV
 
-from fri import genClassificationData
+from arfs_gen import genClassificationData
 from squamish.utils import reduced_data
 import numpy as np
 

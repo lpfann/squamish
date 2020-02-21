@@ -3,6 +3,8 @@ name = "squamish"
 version = "0.2.0"
 description = "Feature Classification and Relation Tool"
 authors = ["Lukas Pfannschmidt <lukas@lpfann.me>"]
+license = "Apache-2.0"
+readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.6"

@@ -18,12 +18,16 @@ class Main(BaseEstimator):
     def __init__(
             self,
             problem="classification",
+            n_resampling=50,
+            fpr=1e-4,
             random_state=None,
             n_jobs=-1,
             debug=True
     ):
         self.n_jobs = n_jobs
         self.problem = problem
+        self.n_resampling = n_resampling
+        self.fpr = fpr
         self.random_state = check_random_state(random_state)
         if debug:
             logger.setLevel(logging.DEBUG)
@@ -49,7 +53,7 @@ class Main(BaseEstimator):
         logger.debug(f"importances {m.estimator.feature_importances_}")
         self.rfmodel = deepcopy(m)
 
-        self.stat_ = Stats(m, X, y, n_resampling=50, fpr=1e-4,
+        self.stat_ = Stats(m, X, y, n_resampling=self.n_resampling, fpr=self.fpr,
                            random_state=self.random_state, check_importances=True)
         fset = m.fset(X, y, self.stat_)
         fset = np.where(fset)

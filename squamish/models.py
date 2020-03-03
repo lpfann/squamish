@@ -66,7 +66,7 @@ class RF(Model):
 
     def __init__(self, random_state=None, n_jobs=-1, **params):
         self.n_jobs = n_jobs
-        if params is None:
+        if params is None or len(params) == 0:
             params = self.BEST_PARAMS
         self.random_state = check_random_state(random_state)
 

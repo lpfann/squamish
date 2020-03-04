@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import stats
 from sklearn.utils import check_random_state
-
+from copy import deepcopy
 import logging
 
 logging = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ class Stats:
 
     def __init__(self, model, X, y, n_resampling=50, fpr=1e-4, random_state=None,
                  check_importances=True):
-        self.model = model
+        self.model = deepcopy(model)
         self.X = X
         self.y = y
         self.n_resampling = n_resampling

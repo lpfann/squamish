@@ -55,7 +55,7 @@ class Main(BaseEstimator):
 
         self.stat_ = Stats(m, X, y, n_resampling=self.n_resampling, fpr=self.fpr,
                            random_state=self.random_state, check_importances=True)
-        fset = m.fset(X, y, self.stat_)
+        fset = self.rfmodel.fset(X, y, self.stat_)
         fset = np.where(fset)
         MR = fset[0]
 

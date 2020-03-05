@@ -55,8 +55,8 @@ class Stats:
             # Iterate over columns of matrix, column corresponds to all samples for 1 feature
             self.imp_stat = [_create_probe_statistic(col, fpr) for col in imps]
 
-            shadowimps = [sc[2] for sc in samples]
-            self.shadow_stat = _create_probe_statistic(shadowimps, fpr)
+            self.shadow_importance_samples = [sc[2] for sc in samples]
+            self.shadow_stat = _create_probe_statistic(self.shadow_importance_samples, fpr)
             logging.debug(f"Shadow Bounds:{self.shadow_stat}")
 
     def generate_samples(self):

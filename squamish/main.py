@@ -19,7 +19,7 @@ class Main(BaseEstimator):
             self,
             problem="classification",
             n_resampling=50,
-            fpr=1e-4,
+            fpr=1e-6,
             random_state=None,
             n_jobs=-1,
             debug=True
@@ -29,6 +29,7 @@ class Main(BaseEstimator):
         self.n_resampling = n_resampling
         self.fpr = fpr
         self.random_state = check_random_state(random_state)
+        self.debug = debug
         if debug:
             logger.setLevel(logging.DEBUG)
 

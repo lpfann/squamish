@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 from collections import defaultdict
 
+
 def combine_sets(A, B):
     C = np.union1d(A, B)  # Combine with weakly relevant features
     C = np.sort(C).astype(int)
@@ -101,10 +102,9 @@ class FeatureSorter:
             score_without_f = self.model.score_with_i_permuted(
                 self.X_onlyrelevant, self.y, index_of_f, random_state=self.random_state
             )
-            
+
             # Check score with previously created statistic
             self.check_significance(f, score_without_f)
-            
 
         logger.debug(f"S: {self.S}")
         logger.debug(f"W: {self.W}")

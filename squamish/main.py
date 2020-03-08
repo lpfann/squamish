@@ -86,7 +86,6 @@ class Main(BaseEstimator):
         # Simple boolean vector where relevan features are regarded as one set (1 relevant, 0 irrelevant)
         self.support_ = self.relevance_classes_ > 0
 
-
     def score(self, X, y):
         return self.rfmodel.score(X, y)
 

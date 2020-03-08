@@ -10,6 +10,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def combine_sets(A, B):
     C = np.union1d(A, B)  # Combine with weakly relevant features
     C = np.sort(C).astype(int)
@@ -23,7 +24,7 @@ def set_without_f(A, f):
 
 class FeatureSorter:
     PARAMS = {
-        #"max_depth": 5,
+        # "max_depth": 5,
         "boosting_type": "rf",
         "bagging_fraction": 0.632,
         "bagging_freq": 1,
@@ -54,8 +55,9 @@ class FeatureSorter:
         self.X_onlyrelevant = scale(self.X_onlyrelevant)
         logger.debug(f"predetermined weakly {self.W}")
 
-        self.model = RF(random_state=self.random_state, n_jobs=self.n_jobs,
-                        **self.DENSE_PARAMS)
+        self.model = RF(
+            random_state=self.random_state, n_jobs=self.n_jobs, **self.DENSE_PARAMS
+        )
         # print_scores_on_sets(AR, MR, self.MR_and_W, X, self.model, y)
 
         self.score_bounds = statistics.score_stat
@@ -95,7 +97,7 @@ class FeatureSorter:
             fset_without_f = set_without_f(self.MR_and_W, f)
 
             # Determine Relevance class by checking score without feature f
-            rel_f_ix = np.where(self.MR_and_W==f)[0]
+            rel_f_ix = np.where(self.MR_and_W == f)[0]
             score_without_f = self.model.score_with_i_permuted(
                 self.X_onlyrelevant, self.y, rel_f_ix, random_state=self.random_state
             )

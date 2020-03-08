@@ -16,13 +16,13 @@ logger = logging.getLogger(__name__)
 
 class Main(BaseEstimator):
     def __init__(
-            self,
-            problem="classification",
-            n_resampling=50,
-            fpr=1e-6,
-            random_state=None,
-            n_jobs=-1,
-            debug=True
+        self,
+        problem="classification",
+        n_resampling=50,
+        fpr=1e-6,
+        random_state=None,
+        n_jobs=-1,
+        debug=True,
     ):
         self.n_jobs = n_jobs
         self.problem = problem
@@ -41,8 +41,9 @@ class Main(BaseEstimator):
         n, d = X.shape
 
         # All relevant set using Boruta
-        m = models.MyBoruta(random_state=self.random_state, n_jobs=self.n_jobs).fit(X,
-                                                                                    y)
+        m = models.MyBoruta(random_state=self.random_state, n_jobs=self.n_jobs).fit(
+            X, y
+        )
         # bor_score = m.cvscore(X, y)
         fset = m.fset(X, y)
         AR = np.where(fset)[0]
@@ -54,8 +55,15 @@ class Main(BaseEstimator):
         logger.debug(f"importances {m.estimator.feature_importances_}")
         self.rfmodel = deepcopy(m)
 
-        self.stat_ = Stats(m, X, y, n_resampling=self.n_resampling, fpr=self.fpr,
-                           random_state=self.random_state, check_importances=True)
+        self.stat_ = Stats(
+            m,
+            X,
+            y,
+            n_resampling=self.n_resampling,
+            fpr=self.fpr,
+            random_state=self.random_state,
+            check_importances=True,
+        )
         fset = self.rfmodel.fset(X, y, self.stat_)
         fset = np.where(fset)
         MR = fset[0]
@@ -64,8 +72,9 @@ class Main(BaseEstimator):
         logger.debug(f"Features from RF: {MR}")
 
         # Sort features iteratively into strongly (S) and weakly (W) sets
-        self.fsorter = FeatureSorter(X, y, MR, AR, self.random_state, self.stat_,
-                                     n_jobs=self.n_jobs)
+        self.fsorter = FeatureSorter(
+            X, y, MR, AR, self.random_state, self.stat_, n_jobs=self.n_jobs
+        )
         self.fsorter.check_each_feature()
         self.relations_ = self.fsorter.related
 
@@ -79,9 +88,9 @@ class Main(BaseEstimator):
 
         # self.feature_importances_ = utils.compute_importances(importances)[1] # Take mean
         # self.interval_ = utils.emulate_intervals(importances)
-    
-    def score(self,X, y):
-        return self.rfmodel.score(X,y)
 
-    def predict(self,X):
+    def score(self, X, y):
+        return self.rfmodel.score(X, y)
+
+    def predict(self, X):
         return self.rfmodel.predict(X)

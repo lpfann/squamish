@@ -35,9 +35,16 @@ def add_NFeature_to_X(X, feature_i, random_state):
 
 
 class Stats:
-
-    def __init__(self, model, X, y, n_resampling=50, fpr=1e-4, random_state=None,
-                 check_importances=True):
+    def __init__(
+        self,
+        model,
+        X,
+        y,
+        n_resampling=50,
+        fpr=1e-4,
+        random_state=None,
+        check_importances=True,
+    ):
         self.model = deepcopy(model)
         self.X = X
         self.y = y
@@ -56,14 +63,17 @@ class Stats:
             self.imp_stat = [_create_probe_statistic(col, fpr) for col in imps]
 
             self.shadow_importance_samples = [sc[2] for sc in samples]
-            self.shadow_stat = _create_probe_statistic(self.shadow_importance_samples, fpr)
+            self.shadow_stat = _create_probe_statistic(
+                self.shadow_importance_samples, fpr
+            )
             logging.debug(f"Shadow Bounds:{self.shadow_stat}")
 
     def generate_samples(self):
 
         # Random sample n_resampling shadow features by permuting real features
-        random_choice = self.random_state.choice(a=self.X.shape[1],
-                                                 size=self.n_resampling)
+        random_choice = self.random_state.choice(
+            a=self.X.shape[1], size=self.n_resampling
+        )
 
         # Instantiate objects
         samples = []

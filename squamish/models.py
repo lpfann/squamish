@@ -22,6 +22,7 @@ def get_relev_class_SFM(X, y, model):
     # rfc.fit(X, y)
     return sfm.get_support().astype(int)
 
+
 class Model:
     def __init__(self):
         self.estimator = None
@@ -51,7 +52,7 @@ class Model:
 
 class RF(Model):
     BEST_PARAMS = {
-        "num_leaves":32,
+        "num_leaves": 32,
         "max_depth": 5,
         "boosting_type": "rf",
         "bagging_fraction": 0.632,
@@ -71,7 +72,8 @@ class RF(Model):
         self.random_state = check_random_state(random_state)
 
         self.estimator = lightgbm.LGBMClassifier(
-            random_state=self.random_state.randint(1e6), n_jobs=self.n_jobs, **params)
+            random_state=self.random_state.randint(1e6), n_jobs=self.n_jobs, **params
+        )
         self.fset_ = None
 
     def fset(self, X, y, stats):
@@ -86,11 +88,13 @@ class RF(Model):
                 #     self.fset_ = get_relev_class_RFE(X, y, self.estimator)
                 #     logging.info(f"RFE SET: {self.fset_}")
                 lo_bound, hi_bound = stats.shadow_stat
-                bigger_than_shadow_bound = self.estimator.feature_importances_ > hi_bound
+                bigger_than_shadow_bound = (
+                    self.estimator.feature_importances_ > hi_bound
+                )
                 self.fset_ = bigger_than_shadow_bound.astype(int)
                 # logging.debug(f"Shadow SET: {self.fset_}")
                 # self.fset_ = get_relev_class_RFE(X, y, self.estimator)
-                #logging.info(f"RFE SET: {self.fset_}")
+                # logging.info(f"RFE SET: {self.fset_}")
             return self.fset_
         else:
             raise Exception("Model has no fset_ yet. Not fitted?")
@@ -106,13 +110,14 @@ class RF(Model):
         X_c = scale(X_c)
         self.estimator.fit(X_c, y)
         return self.score(X_c, y)
-    
+
     def predict(self, X):
         return self.estimator.predict(X)
 
+
 class MyBoruta(Model):
     BEST_PARAMS_BORUTA = {
-        "num_leaves":32,
+        "num_leaves": 32,
         "max_depth": 5,
         "boosting_type": "rf",
         "bagging_fraction": 0.632,
@@ -146,11 +151,14 @@ class MyBoruta(Model):
             tree_params = None
             boruta_params = None
         self.random_state = check_random_state(random_state)
-        lm = lightgbm.LGBMClassifier(random_state=self.random_state.randint(1e6),
-                                     n_jobs=self.n_jobs,
-                                     **tree_params, )
-        self.estimator = BorutaPy(lm, verbose=0, random_state=self.random_state,
-                                  **boruta_params)
+        lm = lightgbm.LGBMClassifier(
+            random_state=self.random_state.randint(1e6),
+            n_jobs=self.n_jobs,
+            **tree_params,
+        )
+        self.estimator = BorutaPy(
+            lm, verbose=0, random_state=self.random_state, **boruta_params
+        )
 
     def fset(self, X, y):
         if hasattr(self.estimator, "support_"):

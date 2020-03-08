@@ -97,9 +97,9 @@ class FeatureSorter:
             fset_without_f = set_without_f(self.MR_and_W, f)
 
             # Determine Relevance class by checking score without feature f
-            rel_f_ix = np.where(self.MR_and_W == f)[0]
+            index_of_f = np.where(self.MR_and_W == f)[0]
             score_without_f = self.model.score_with_i_permuted(
-                self.X_onlyrelevant, self.y, rel_f_ix, random_state=self.random_state
+                self.X_onlyrelevant, self.y, index_of_f, random_state=self.random_state
             )
             logger.debug(f"score without {f}: {score_without_f}")
             significant = self.is_significant_score_deviation(score_without_f)

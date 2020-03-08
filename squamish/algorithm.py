@@ -165,47 +165,6 @@ class RelationFinder:
         relatives = self.features_with_significant_change(importances)
         return relatives
 
-    # def get_relatives(self, f, fset, prefit=False):
-    #     """
-    #         Recursively check and remove features which are related.
-    #         We keep a state in the object to save already seen features to remove redundancies
-    #     """
-    #     # print(f"feature {f} fset:{fset}")
-    #
-    #     if f not in self.seen:
-    #         # add feature to seen list
-    #         self.seen = combine_sets(self.seen, [f])
-    #
-    #     if prefit:
-    #         # Prefit only in first call to save one model fit
-    #         fset_without_f = fset
-    #     else:
-    #         # Fit model without feature f
-    #         fset_without_f = set_without_f(fset, f)
-    #         self.model.redscore(*self.data, fset_without_f)
-    #
-    #     # Get importances together with feature index
-    #     importances = zip(fset_without_f, self.model.importances())
-    #     # Find significantly different behaving features in this model
-    #     relatives = self.features_with_significant_positive_change(importances)
-    #     # If features where already handled earlier, filter out
-    #     unseen = list(filter(lambda x: x not in self.seen, relatives))
-    #
-    #     # Create list of child features which are related
-    #     rels = []
-    #     rels.append(f)
-    #     # Check unseen features with an importance value which changed significantly
-    #     for fu in unseen:
-    #         if len(fset_without_f) == 1:
-    #             rels.append(fu)
-    #         else:
-    #             # Recursion into feature fu
-    #             child_rel = self.get_relatives(fu, fset_without_f)
-    #
-    #             # Return child relative list and add it to this list
-    #             rels.extend(child_rel)
-    #
-    #     return list(np.unique(rels))
 
     def features_with_significant_change(self, f_ids_with_imp):
         cands = []

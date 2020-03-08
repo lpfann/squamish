@@ -76,18 +76,16 @@ class Main(BaseEstimator):
             X, y, MR, AR, self.random_state, self.stat_, n_jobs=self.n_jobs
         )
         self.fsorter.check_each_feature()
-        self.relations_ = self.fsorter.related
 
         # Turn index sets into support vector
         # (2 strong relevant,1 weak relevant, 0 irrelevant)
         all_rel_support = create_support_AR(d, self.fsorter.S, self.fsorter.W)
         self.relevance_classes_ = all_rel_support
         logger.info(f"Relevance Classes: {self.relevance_classes_}")
+
         # Simple boolean vector where relevan features are regarded as one set (1 relevant, 0 irrelevant)
         self.support_ = self.relevance_classes_ > 0
 
-        # self.feature_importances_ = utils.compute_importances(importances)[1] # Take mean
-        # self.interval_ = utils.emulate_intervals(importances)
 
     def score(self, X, y):
         return self.rfmodel.score(X, y)

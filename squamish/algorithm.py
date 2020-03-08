@@ -59,15 +59,10 @@ class FeatureSorter:
         self.model = RF(
             random_state=self.random_state, n_jobs=self.n_jobs, **self.DENSE_PARAMS
         )
-        # print_scores_on_sets(AR, MR, self.MR_and_W, X, self.model, y)
 
         self.score_bounds = statistics.score_stat
-        imp_bounds_list = statistics.imp_stat
 
         logger.debug(f"score bounds: {self.score_bounds}")
-        self.fimp_bounds = {}
-        for f_ix, imp in zip(self.MR_and_W, imp_bounds_list):
-            self.fimp_bounds[f_ix] = imp
 
     def check_significance(self, f, score_without_f):
         # check score if f is removed
@@ -86,15 +81,13 @@ class FeatureSorter:
             return False
 
     def check_each_feature(self):
-        self.related = {}
-        self.synergies = {}
 
         if len(self.MR_and_W) == 1:
             # Only one feature, which should be str. relevant
             self.S = self.MR
             logger.debug("Only one feature")
             return
-        self.debug_f_imps = {}
+
         for f in self.MR:
             logger.debug(f"------------------- Feature f:{f}")
 
@@ -108,33 +101,14 @@ class FeatureSorter:
             score_without_f = self.model.score_with_i_permuted(
                 self.X_onlyrelevant, self.y, index_of_f, random_state=self.random_state
             )
-
-            # Get importances together with feature index
-            ids_and_importances = list(zip(fset_without_f, self.model.importances()))
             
             # Check score with previously created statistic
-            is_strongly_relevant = self.check_significance(f, score_without_f)
+            self.check_significance(f, score_without_f)
             
-            # If weakly relevant, find related features based on feature importance changes
-            if not is_strongly_relevant:
-                relatives = self.features_with_significant_change(ids_and_importances)
-                self.related[f] = relatives
-            self.debug_f_imps[f] = ids_and_importances
 
-
-        self.related = filter_strongly(self.related, self.S)
-        logger.debug(f"Related: {self.related}")
-        # print("Synergies:", self.synergies)
         logger.debug(f"S: {self.S}")
         logger.debug(f"W: {self.W}")
 
-    def features_with_significant_change(self, f_ids_with_imp):
-        cands = []
-        for f_ix, imp in f_ids_with_imp:
-            lo, hi = self.fimp_bounds[f_ix]
-            if not lo <= imp <= hi:
-                cands.append(f_ix)
-        return cands
 
 def print_scores_on_sets(AR, MR, MR_and_W, X, model, y):
     score_on_MR = model.redscore(X, y, MR)
@@ -146,9 +120,3 @@ def print_scores_on_sets(AR, MR, MR_and_W, X, model, y):
     scores = {"MR": score_on_MR, "AR": score_on_AR, "MR+W": score_on_MR_and_W}
     for k, sc in scores.items():
         logger.debug(f"{k} has score {sc}")
-
-
-def filter_strongly(related, known_strongly):
-    for k, v in related.items():
-        related[k] = list(filter(lambda x: x not in known_strongly, v))
-    return related

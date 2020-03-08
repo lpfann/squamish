@@ -10,6 +10,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+from collections import defaultdict
 
 def combine_sets(A, B):
     C = np.union1d(A, B)  # Combine with weakly relevant features
@@ -68,16 +69,20 @@ class FeatureSorter:
         for f_ix, imp in zip(self.MR_and_W, imp_bounds_list):
             self.fimp_bounds[f_ix] = imp
 
-    def is_significant_score_deviation(self, score_without_f):
+    def check_significance(self, f, score_without_f):
         # check score if f is removed
         # Test if value lies in acceptance range of null distribution
         # i.e. no signif. change compared to perm. feature
         # __We only check lower dist bound for worsening score when f is removed -> Strong relevant
+        logger.debug(f"score without {f}: {score_without_f}")
+
         if score_without_f < self.score_bounds[0]:
             logger.debug(f"removal_score:{score_without_f:.3}-> S")
+            self.S.append(f)
             return True
         else:
             logger.debug(f"removal_score:{score_without_f:.3}-> W")
+            self.W.append(f)
             return False
 
     def check_each_feature(self):
@@ -89,41 +94,33 @@ class FeatureSorter:
             self.S = self.MR
             logger.debug("Only one feature")
             return
-
+        self.debug_f_imps = {}
         for f in self.MR:
             logger.debug(f"------------------- Feature f:{f}")
 
             # Remove feature f from MR u W
             fset_without_f = set_without_f(self.MR_and_W, f)
 
-            # Determine Relevance class by checking score without feature f
+            # What index has f in featureset
             index_of_f = np.where(self.MR_and_W == f)[0]
+
+            # Fit model with f removed (permutated) and return score
             score_without_f = self.model.score_with_i_permuted(
                 self.X_onlyrelevant, self.y, index_of_f, random_state=self.random_state
             )
-            logger.debug(f"score without {f}: {score_without_f}")
-            significant = self.is_significant_score_deviation(score_without_f)
-            if significant:
-                self.S.append(f)
-            else:
-                self.W.append(f)
 
-            # Record Importances with this subset of features
-            if not significant:
-                finder = RelationFinder(
-                    [f],
-                    (self.X_onlyrelevant, self.y),
-                    self.model,
-                    self.fimp_bounds,
-                    fset_without_f,
-                )
-                relatives = finder.check_for_redundancies()
-                # relatives.remove(f)  # Remove self
+            # Get importances together with feature index
+            ids_and_importances = list(zip(fset_without_f, self.model.importances()))
+            
+            # Check score with previously created statistic
+            is_strongly_relevant = self.check_significance(f, score_without_f)
+            
+            # If weakly relevant, find related features based on feature importance changes
+            if not is_strongly_relevant:
+                relatives = self.features_with_significant_change(ids_and_importances)
                 self.related[f] = relatives
-            # else:
-            #     relatives = finder.check_for_synergies()
-            #     if len(relatives)>0:
-            #         self.synergies[f] = relatives
+            self.debug_f_imps[f] = ids_and_importances
+
 
         self.related = filter_strongly(self.related, self.S)
         logger.debug(f"Related: {self.related}")
@@ -131,6 +128,13 @@ class FeatureSorter:
         logger.debug(f"S: {self.S}")
         logger.debug(f"W: {self.W}")
 
+    def features_with_significant_change(self, f_ids_with_imp):
+        cands = []
+        for f_ix, imp in f_ids_with_imp:
+            lo, hi = self.fimp_bounds[f_ix]
+            if not lo <= imp <= hi:
+                cands.append(f_ix)
+        return cands
 
 def print_scores_on_sets(AR, MR, MR_and_W, X, model, y):
     score_on_MR = model.redscore(X, y, MR)
@@ -148,28 +152,3 @@ def filter_strongly(related, known_strongly):
     for k, v in related.items():
         related[k] = list(filter(lambda x: x not in known_strongly, v))
     return related
-
-
-class RelationFinder:
-    def __init__(self, seen, data, model, importances_null_bounds, used_feature_ids):
-        self.seen = seen
-        self.data = data
-        self.model = model
-        self.importances_null_bounds = importances_null_bounds
-        self.feature_ids = used_feature_ids
-
-    def check_for_redundancies(self):
-        # Get importances together with feature index
-        importances = zip(self.feature_ids, self.model.importances())
-        # Find significantly different behaving features in this model
-        relatives = self.features_with_significant_change(importances)
-        return relatives
-
-
-    def features_with_significant_change(self, f_ids_with_imp):
-        cands = []
-        for f_ix, imp in f_ids_with_imp:
-            lo, hi = self.importances_null_bounds[f_ix]
-            if not lo <= imp <= hi:
-                cands.append(f_ix)
-        return cands

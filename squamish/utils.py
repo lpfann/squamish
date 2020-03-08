@@ -45,7 +45,7 @@ def perm_i_in_X(X, feature_i, random_state):
     # Permute selected feature
     permutated_feature = random_state.permutation(X_copy[:, feature_i])
 
-    # Append permutation to dataset
+    # replace feature i with permutation
     X_copy[:, feature_i] = permutated_feature
     return X_copy
 

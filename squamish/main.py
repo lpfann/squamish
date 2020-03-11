@@ -3,6 +3,7 @@ from copy import deepcopy
 
 import numpy as np
 from sklearn.base import BaseEstimator
+from sklearn.exceptions import NotFittedError
 from sklearn.preprocessing import scale
 from sklearn.utils import check_random_state
 
@@ -115,11 +116,18 @@ class Main(BaseEstimator):
         # Turn index sets into support vector
         # (2 strong relevant,1 weak relevant, 0 irrelevant)
         all_rel_support = create_support_AR(d, self.fsorter.S, self.fsorter.W)
-        self.relevance_classes_ = all_rel_support
+        self._relevance_classes = all_rel_support
         logger.info(f"Relevance Classes: {self.relevance_classes_}")
 
         # Simple boolean vector where relevan features are regarded as one set (1 relevant, 0 irrelevant)
-        self.support_ = self.relevance_classes_ > 0
+        self.support_ = self._relevance_classes > 0
+
+    @property
+    def relevance_classes_(self):
+        """ Returnss vector of relevance classes. 0 = irrelevant, 1 = weakly relevant, 2 = strongly relevant"""
+        if self._relevance_classes is None:
+            raise NotFittedError("Call fit first.")
+        return self._relevance_classes
 
     def score(self, X, y):
         """

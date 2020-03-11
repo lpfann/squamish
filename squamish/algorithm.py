@@ -1,16 +1,13 @@
+import logging
 from copy import copy
 
 import numpy as np
 from sklearn.preprocessing import scale
 
 from squamish.models import RF
-from squamish.stat import Stats
 from squamish.utils import reduced_data
-import logging
 
 logger = logging.getLogger(__name__)
-
-from collections import defaultdict
 
 
 def combine_sets(A, B):
@@ -41,7 +38,9 @@ class FeatureSorter:
     DENSE_PARAMS = copy(PARAMS)
     DENSE_PARAMS["feature_fraction"] = 0.1
 
-    def __init__(self, X, y, MR, AR, random_state, statistics, n_jobs=-1, debug=False):
+    def __init__(self, problem_type, X, y, MR, AR, random_state, statistics, n_jobs=-1,
+                 debug=False):
+        self.problem_type = problem_type
         self.n_jobs = n_jobs
         if debug:
             logger.setLevel(logging.DEBUG)
@@ -57,9 +56,8 @@ class FeatureSorter:
         self.X_onlyrelevant = scale(self.X_onlyrelevant)
         logger.debug(f"predetermined weakly {self.W}")
 
-        self.model = RF(
-            random_state=self.random_state, n_jobs=self.n_jobs, **self.DENSE_PARAMS
-        )
+        self.model = RF(self.problem_type, random_state=self.random_state,
+                        n_jobs=self.n_jobs)
 
         self.score_bounds = statistics.score_stat
 

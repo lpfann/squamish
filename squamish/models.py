@@ -1,3 +1,5 @@
+import logging
+
 import lightgbm
 import numpy as np
 import sklearn.feature_selection as fs
@@ -5,8 +7,8 @@ from boruta import BorutaPy
 from sklearn.model_selection import cross_val_score
 from sklearn.preprocessing import scale
 from sklearn.utils import check_random_state
+
 from squamish.utils import reduced_data, perm_i_in_X
-import logging
 
 logging = logging.getLogger(__name__)
 
@@ -23,11 +25,25 @@ def get_relev_class_SFM(X, y, model):
     return sfm.get_support().astype(int)
 
 
+def get_RF_class(problem_type):
+    if problem_type == "classification":
+        return lightgbm.LGBMClassifier
+    if problem_type == "regression":
+        return lightgbm.LGBMRegressor
+    if problem_type == "ranking":
+        return lightgbm.LGBMRanker
+
+    raise Exception(
+        "Problem Type does not exist. Try 'classification', 'regression' or 'raking'.")
+
+
 class Model:
-    def __init__(self):
+    def __init__(self, problem_type, random_state=None, n_jobs=-1):
+        self.problem_type = problem_type
+        self.random_state = check_random_state(random_state)
+        self.n_jobs = n_jobs
         self.estimator = None
         self.fset_ = None
-        self.random_state = None
 
     def fit(self, X, y):
         X = scale(X)
@@ -65,13 +81,14 @@ class RF(Model):
         "verbose": -1,
     }
 
-    def __init__(self, random_state=None, n_jobs=-1, **params):
-        self.n_jobs = n_jobs
+    def __init__(self, problem_type, random_state=None, n_jobs=-1, **params):
+        super().__init__(problem_type, random_state, n_jobs)
+
         if params is None or len(params) == 0:
             params = self.BEST_PARAMS
-        self.random_state = check_random_state(random_state)
 
-        self.estimator = lightgbm.LGBMClassifier(
+        model = get_RF_class(self.problem_type)
+        self.estimator = model(
             random_state=self.random_state.randint(1e6), n_jobs=self.n_jobs, **params
         )
         self.fset_ = None
@@ -79,22 +96,11 @@ class RF(Model):
     def fset(self, X, y, stats):
         if hasattr(self.estimator, "feature_importances_"):
             if self.fset_ is None:
-                # d = X.shape[1]
-                # if d > d_thresh:
-                #     self.fset_ = get_relev_class_SFM(X,y,self.estimator)
-                # else:
-                #     self.fset_ = get_relev_class_SFM(X,y,self.estimator)
-                #     logging.info(f"SFM SET: {self.fset_}")
-                #     self.fset_ = get_relev_class_RFE(X, y, self.estimator)
-                #     logging.info(f"RFE SET: {self.fset_}")
                 lo_bound, hi_bound = stats.shadow_stat
                 bigger_than_shadow_bound = (
                     self.estimator.feature_importances_ > hi_bound
                 )
                 self.fset_ = bigger_than_shadow_bound.astype(int)
-                # logging.debug(f"Shadow SET: {self.fset_}")
-                # self.fset_ = get_relev_class_RFE(X, y, self.estimator)
-                # logging.info(f"RFE SET: {self.fset_}")
             return self.fset_
         else:
             raise Exception("Model has no fset_ yet. Not fitted?")
@@ -134,27 +140,32 @@ class MyBoruta(Model):
         "importance_type": "gain",
     }
 
-    def __init__(self, random_state=None, n_jobs=-1, params=None):
-        self.n_jobs = n_jobs
-        if params is None:
-            tree_params = {
-                k: v
-                for k, v in self.BEST_PARAMS_BORUTA.items()
-                if not k.startswith("b_")
-            }
-            boruta_params = {
-                k[2:]: v
-                for k, v in self.BEST_PARAMS_BORUTA.items()
-                if k.startswith("b_")
-            }
-        else:
-            tree_params = None
-            boruta_params = None
-        self.random_state = check_random_state(random_state)
-        lm = lightgbm.LGBMClassifier(
+    def __init__(self, problem_type, random_state=None, n_jobs=-1, **params):
+        super().__init__(problem_type, random_state, n_jobs)
+
+        tree_params = {
+            k: v
+            for k, v in self.BEST_PARAMS_BORUTA.items()
+            if not k.startswith("b_")
+        }
+        boruta_params = {
+            k[2:]: v
+            for k, v in self.BEST_PARAMS_BORUTA.items()
+            if k.startswith("b_")
+        }
+
+        for name, val in params.items():
+            if name.startswith("b_"):
+                boruta_params[name] = val
+            else:
+                tree_params[name] = val
+
+        Model = get_RF_class(self.problem_type)
+
+        lm = Model(
             random_state=self.random_state.randint(1e6),
             n_jobs=self.n_jobs,
-            **tree_params,
+            **tree_params
         )
         self.estimator = BorutaPy(
             lm, verbose=0, random_state=self.random_state, **boruta_params

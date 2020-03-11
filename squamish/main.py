@@ -1,14 +1,14 @@
+import logging
 from copy import deepcopy
 
 import numpy as np
 from sklearn.base import BaseEstimator
 from sklearn.preprocessing import scale
 from sklearn.utils import check_random_state
-from squamish.utils import create_support_AR
-from squamish.algorithm import FeatureSorter
-from . import models
-import logging
 
+from squamish.algorithm import FeatureSorter
+from squamish.utils import create_support_AR
+from . import models
 from .stat import Stats
 
 logger = logging.getLogger(__name__)
@@ -16,16 +16,16 @@ logger = logging.getLogger(__name__)
 
 class Main(BaseEstimator):
     def __init__(
-        self,
-        problem="classification",
-        n_resampling=50,
-        fpr=1e-6,
-        random_state=None,
-        n_jobs=-1,
-        debug=True,
+            self,
+            problem_type="classification",
+            n_resampling=50,
+            fpr=1e-6,
+            random_state=None,
+            n_jobs=-1,
+            debug=True,
     ):
         self.n_jobs = n_jobs
-        self.problem = problem
+        self.problem_type = problem_type
         self.n_resampling = n_resampling
         self.fpr = fpr
         self.random_state = check_random_state(random_state)
@@ -41,7 +41,8 @@ class Main(BaseEstimator):
         n, d = X.shape
 
         # All relevant set using Boruta
-        m = models.MyBoruta(random_state=self.random_state, n_jobs=self.n_jobs).fit(
+        m = models.MyBoruta(self.problem_type, random_state=self.random_state,
+                            n_jobs=self.n_jobs).fit(
             X, y
         )
         # bor_score = m.cvscore(X, y)
@@ -49,7 +50,8 @@ class Main(BaseEstimator):
         AR = np.where(fset)[0]
 
         # Fit a simple Random Forest to get a minimal feature subset
-        m = models.RF(random_state=self.random_state, n_jobs=self.n_jobs).fit(X, y)
+        m = models.RF(self.problem_type, random_state=self.random_state,
+                      n_jobs=self.n_jobs).fit(X, y)
         self.score_ = m.cvscore(X, y)
         logger.debug(f"RF score {self.score_}")
         logger.debug(f"importances {m.estimator.feature_importances_}")
@@ -72,9 +74,8 @@ class Main(BaseEstimator):
         logger.debug(f"Features from RF: {MR}")
 
         # Sort features iteratively into strongly (S) and weakly (W) sets
-        self.fsorter = FeatureSorter(
-            X, y, MR, AR, self.random_state, self.stat_, n_jobs=self.n_jobs
-        )
+        self.fsorter = FeatureSorter(self.problem_type, X, y, MR, AR, self.random_state,
+                                     self.stat_, n_jobs=self.n_jobs)
         self.fsorter.check_each_feature()
 
         # Turn index sets into support vector

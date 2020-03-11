@@ -40,7 +40,7 @@ def test_linear_data_class():
     )
     model = Main(problem_type="classification")
     model.fit(X, y)
-
+    assert len(model.relevance_classes_) == X.shape[1]
 
 def test_linear_data_regression():
     X, y = genRegressionData(
@@ -48,3 +48,4 @@ def test_linear_data_regression():
     )
     model = Main(problem_type="regression")
     model.fit(X, y)
+    assert len(model.relevance_classes_) == X.shape[1]

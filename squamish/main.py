@@ -17,13 +17,13 @@ logger = logging.getLogger(__name__)
 
 class Main(BaseEstimator):
     def __init__(
-            self,
-            problem_type="classification",
-            n_resampling=50,
-            fpr=1e-6,
-            random_state=None,
-            n_jobs=-1,
-            debug=True,
+        self,
+        problem_type="classification",
+        n_resampling=50,
+        fpr=1e-6,
+        random_state=None,
+        n_jobs=-1,
+        debug=True,
     ):
         """
 

@@ -39,16 +39,16 @@ class FeatureSorter:
     DENSE_PARAMS["feature_fraction"] = 0.1
 
     def __init__(
-            self,
-            problem_type,
-            X,
-            y,
-            MR,
-            AR,
-            random_state,
-            statistics,
-            n_jobs=-1,
-            debug=False,
+        self,
+        problem_type,
+        X,
+        y,
+        MR,
+        AR,
+        random_state,
+        statistics,
+        n_jobs=-1,
+        debug=False,
     ):
         self.problem_type = problem_type
         self.n_jobs = n_jobs

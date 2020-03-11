@@ -9,9 +9,6 @@
 > 
 > It classifies each data feature into the three classes (1) strong relevant features (2) weakly relevant features (3) irrelevant features.
 > 
-> It also searches for related features in the group of weakly relevant features.
-> As such it shows not only one possible optimal model but several at the same time.
-> 
 >A Publication detailing the methods used here is WIP.
 >
 > The name is a codename without meaning and chosen because of personal reasons (Beautiful British Columbia...)

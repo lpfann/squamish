@@ -24,6 +24,25 @@ class Main(BaseEstimator):
             n_jobs=-1,
             debug=True,
     ):
+        """
+
+        Parameters
+        ----------
+        problem_type : string
+            "classification", "regression" or "ranking"
+        n_resampling : int
+            Number of samples used in statistics creation.
+        fpr : float
+            Parameter for t-statistic to control strictness of acceptance.
+            Lower is more strict, higher allows more false positives.
+        random_state : object or int
+            Numpy random state object or int to set seed.
+        n_jobs : int
+            Number of parallel threads used.
+            '-1' makes automatic choice depending on avail. CPUs.
+        debug : bool
+            Enable debug output.
+        """
         self.n_jobs = n_jobs
         self.problem_type = problem_type
         self.n_resampling = n_resampling
@@ -34,6 +53,13 @@ class Main(BaseEstimator):
             logger.setLevel(logging.DEBUG)
 
     def _get_support_mask(self):
+        """
+        Returns
+        -------
+        self.support_: vector
+            Vector with boolean class of each input feature with it's computed relevance class.
+            0 = irrelevant, 1 relevant
+        """
         return self.support_
 
     def fit(self, X, y):
@@ -96,6 +122,19 @@ class Main(BaseEstimator):
         self.support_ = self.relevance_classes_ > 0
 
     def score(self, X, y):
+        """
+            Score of internal random forest model.
+        Parameters
+        ----------
+        X : matrix
+            Data matrix
+        y : vector
+            target vector
+        Returns
+        -------
+        score:
+            score on data matrix
+        """
         return self.rfmodel.score(X, y)
 
     def predict(self, X):

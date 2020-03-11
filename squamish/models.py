@@ -34,7 +34,8 @@ def get_RF_class(problem_type):
         return lightgbm.LGBMRanker
 
     raise Exception(
-        "Problem Type does not exist. Try 'classification', 'regression' or 'raking'.")
+        "Problem Type does not exist. Try 'classification', 'regression' or 'raking'."
+    )
 
 
 class Model:
@@ -144,14 +145,10 @@ class MyBoruta(Model):
         super().__init__(problem_type, random_state, n_jobs)
 
         tree_params = {
-            k: v
-            for k, v in self.BEST_PARAMS_BORUTA.items()
-            if not k.startswith("b_")
+            k: v for k, v in self.BEST_PARAMS_BORUTA.items() if not k.startswith("b_")
         }
         boruta_params = {
-            k[2:]: v
-            for k, v in self.BEST_PARAMS_BORUTA.items()
-            if k.startswith("b_")
+            k[2:]: v for k, v in self.BEST_PARAMS_BORUTA.items() if k.startswith("b_")
         }
 
         for name, val in params.items():
@@ -165,7 +162,7 @@ class MyBoruta(Model):
         lm = Model(
             random_state=self.random_state.randint(1e6),
             n_jobs=self.n_jobs,
-            **tree_params
+            **tree_params,
         )
         self.estimator = BorutaPy(
             lm, verbose=0, random_state=self.random_state, **boruta_params

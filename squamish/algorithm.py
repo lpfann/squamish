@@ -38,8 +38,18 @@ class FeatureSorter:
     DENSE_PARAMS = copy(PARAMS)
     DENSE_PARAMS["feature_fraction"] = 0.1
 
-    def __init__(self, problem_type, X, y, MR, AR, random_state, statistics, n_jobs=-1,
-                 debug=False):
+    def __init__(
+            self,
+            problem_type,
+            X,
+            y,
+            MR,
+            AR,
+            random_state,
+            statistics,
+            n_jobs=-1,
+            debug=False,
+    ):
         self.problem_type = problem_type
         self.n_jobs = n_jobs
         if debug:
@@ -56,8 +66,9 @@ class FeatureSorter:
         self.X_onlyrelevant = scale(self.X_onlyrelevant)
         logger.debug(f"predetermined weakly {self.W}")
 
-        self.model = RF(self.problem_type, random_state=self.random_state,
-                        n_jobs=self.n_jobs)
+        self.model = RF(
+            self.problem_type, random_state=self.random_state, n_jobs=self.n_jobs
+        )
 
         self.score_bounds = statistics.score_stat
 

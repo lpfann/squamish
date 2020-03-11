@@ -41,17 +41,17 @@ class Main(BaseEstimator):
         n, d = X.shape
 
         # All relevant set using Boruta
-        m = models.MyBoruta(self.problem_type, random_state=self.random_state,
-                            n_jobs=self.n_jobs).fit(
-            X, y
-        )
+        m = models.MyBoruta(
+            self.problem_type, random_state=self.random_state, n_jobs=self.n_jobs
+        ).fit(X, y)
         # bor_score = m.cvscore(X, y)
         fset = m.fset(X, y)
         AR = np.where(fset)[0]
 
         # Fit a simple Random Forest to get a minimal feature subset
-        m = models.RF(self.problem_type, random_state=self.random_state,
-                      n_jobs=self.n_jobs).fit(X, y)
+        m = models.RF(
+            self.problem_type, random_state=self.random_state, n_jobs=self.n_jobs
+        ).fit(X, y)
         self.score_ = m.cvscore(X, y)
         logger.debug(f"RF score {self.score_}")
         logger.debug(f"importances {m.estimator.feature_importances_}")
@@ -74,8 +74,16 @@ class Main(BaseEstimator):
         logger.debug(f"Features from RF: {MR}")
 
         # Sort features iteratively into strongly (S) and weakly (W) sets
-        self.fsorter = FeatureSorter(self.problem_type, X, y, MR, AR, self.random_state,
-                                     self.stat_, n_jobs=self.n_jobs)
+        self.fsorter = FeatureSorter(
+            self.problem_type,
+            X,
+            y,
+            MR,
+            AR,
+            self.random_state,
+            self.stat_,
+            n_jobs=self.n_jobs,
+        )
         self.fsorter.check_each_feature()
 
         # Turn index sets into support vector

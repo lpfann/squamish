@@ -99,6 +99,8 @@ class Main(BaseEstimator):
 
         logger.debug(f"Features from Boruta: {AR}")
         logger.debug(f"Features from RF: {MR}")
+        if len(AR) < 1:
+            raise Exception("No features were selected in AR model. Is model properly fit? (score ok?)")
 
         # Sort features iteratively into strongly (S) and weakly (W) sets
         self.fsorter = FeatureSorter(

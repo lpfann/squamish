@@ -81,7 +81,7 @@ class FeatureSorter:
         # __We only check lower dist bound for worsening score when f is removed -> Strong relevant
         logger.debug(f"score without {f}: {score_without_f}")
 
-        if score_without_f < self.score_bounds[0]:
+        if not self.score_bounds[0] < score_without_f  < self.score_bounds[1]:
             logger.debug(f"removal_score:{score_without_f:.3}-> S")
             self.S.append(f)
             return True

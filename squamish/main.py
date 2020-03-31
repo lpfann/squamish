@@ -79,7 +79,7 @@ class Main(BaseEstimator):
         m = models.RF(
             self.problem_type, random_state=self.random_state, n_jobs=self.n_jobs
         ).fit(X, y)
-        self.score_ = m.cvscore(X, y)
+        self.score_ = m.score(X, y)
         logger.debug(f"RF score {self.score_}")
         logger.debug(f"importances {m.estimator.feature_importances_}")
         self.rfmodel = deepcopy(m)

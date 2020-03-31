@@ -92,6 +92,7 @@ class Main(BaseEstimator):
             fpr=self.fpr,
             random_state=self.random_state,
             check_importances=True,
+            debug=self.debug
         )
         fset = self.rfmodel.fset(X, y, self.stat_)
         fset = np.where(fset)
@@ -112,6 +113,7 @@ class Main(BaseEstimator):
             self.random_state,
             self.stat_,
             n_jobs=self.n_jobs,
+            debug=self.debug
         )
         self.fsorter.check_each_feature()
 

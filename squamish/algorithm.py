@@ -2,7 +2,6 @@ import logging
 from copy import copy
 
 import numpy as np
-from sklearn.preprocessing import scale
 
 from squamish.models import RF
 from squamish.utils import reduced_data
@@ -63,7 +62,6 @@ class FeatureSorter:
         self.W = list(np.setdiff1d(AR, MR))
         self.MR_and_W = combine_sets(MR, self.W)
         self.X_onlyrelevant = reduced_data(X, self.MR_and_W)
-        self.X_onlyrelevant = scale(self.X_onlyrelevant)
         logger.debug(f"predetermined weakly {self.W}")
 
         self.model = RF(
@@ -120,9 +118,9 @@ class FeatureSorter:
 
 
 def print_scores_on_sets(AR, MR, MR_and_W, X, model, y):
-    score_on_MR = model.redscore(X, y, MR)
-    score_on_AR = model.redscore(X, y, AR)
-    score_on_MR_and_W = model.redscore(X, y, MR_and_W)
+    score_on_MR = model.score_on_subset(X, y, MR)
+    score_on_AR = model.score_on_subset(X, y, AR)
+    score_on_MR_and_W = model.score_on_subset(X, y, MR_and_W)
     normal_imps = model.importances()
     logger.debug(f"normal_imps:{normal_imps}")
     logger.debug(f"length MR and W {len(MR_and_W)}")

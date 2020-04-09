@@ -1,28 +1,13 @@
 import logging
 
 import lightgbm
-import numpy as np
-import sklearn.feature_selection as fs
 from boruta import BorutaPy
-from sklearn.model_selection import cross_val_score
-from sklearn.preprocessing import scale
 from sklearn.utils import check_random_state
 
 from squamish.utils import reduced_data, perm_i_in_X
 
 logging = logging.getLogger(__name__)
 
-
-def get_relev_class_RFE(X, y, model, cv=5, random_state=None, params=None):
-    rfc = fs.RFECV(model, cv=cv)
-    rfc.fit(X, y)
-    return rfc.support_.astype(int)
-
-
-def get_relev_class_SFM(X, y, model):
-    sfm = fs.SelectFromModel(model, prefit=True, threshold="2*mean")
-    # rfc.fit(X, y)
-    return sfm.get_support().astype(int)
 
 
 def get_RF_class(problem_type):
@@ -47,18 +32,11 @@ class Model:
         self.fset_ = None
 
     def fit(self, X, y):
-        X = scale(X)
         self.estimator.fit(X, y)
         return self
 
     def score(self, X, y, cv=5):
         return self.estimator.score(X, y)
-
-    def cvscore(self, X, y, cv=5):
-        return np.mean(cross_val_score(self.estimator, X, y, cv=cv))
-
-    def fset(self, X, y):
-        raise NotImplementedError
 
     def importances(self):
         if hasattr(self.estimator, "feature_importances_"):
@@ -94,7 +72,7 @@ class RF(Model):
         )
         self.fset_ = None
 
-    def fset(self, X, y, stats):
+    def fset(self, stats):
         if hasattr(self.estimator, "feature_importances_"):
             if self.fset_ is None:
                 lo_bound, hi_bound = stats.shadow_stat
@@ -106,15 +84,13 @@ class RF(Model):
         else:
             raise Exception("Model has no fset_ yet. Not fitted?")
 
-    def redscore(self, X, y, c):
-        X_c = reduced_data(X, c)
-        X_c = scale(X_c)
+    def score_on_subset(self, X, y, featureset):
+        X_c = reduced_data(X, featureset)
         self.estimator.fit(X_c, y)
         return self.score(X_c, y)
 
     def score_with_i_permuted(self, X, y, i, random_state):
         X_c = perm_i_in_X(X, i, random_state)
-        X_c = scale(X_c)
         self.estimator.fit(X_c, y)
         return self.score(X_c, y)
 
@@ -168,12 +144,8 @@ class MyBoruta(Model):
             lm, verbose=0, random_state=self.random_state, **boruta_params
         )
 
-    def fset(self, X, y):
+    def fset(self):
         if hasattr(self.estimator, "support_"):
             return self.estimator.support_
         else:
             raise Exception("Model has no fset_ yet. Not fitted?")
-
-    def cvscore(self, X, y, cv=5):
-        estimator = self.estimator.estimator  # use inner RF
-        return np.mean(cross_val_score(estimator, X, y, cv=cv))

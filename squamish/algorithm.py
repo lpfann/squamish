@@ -79,7 +79,7 @@ class FeatureSorter:
         # __We only check lower dist bound for worsening score when f is removed -> Strong relevant
         logger.debug(f"score without {f}: {score_without_f}")
 
-        if not self.score_bounds[0] < score_without_f  < self.score_bounds[1]:
+        if not self.score_bounds[0] < score_without_f < self.score_bounds[1]:
             logger.debug(f"removal_score:{score_without_f:.3}-> S")
             self.S.append(f)
             return True
@@ -98,9 +98,6 @@ class FeatureSorter:
 
         for f in self.MR:
             logger.debug(f"------------------- Feature f:{f}")
-
-            # Remove feature f from MR u W
-            fset_without_f = set_without_f(self.MR_and_W, f)
 
             # What index has f in featureset
             index_of_f = np.where(self.MR_and_W == f)[0]

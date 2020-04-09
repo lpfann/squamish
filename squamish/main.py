@@ -52,6 +52,13 @@ class Main(BaseEstimator):
         if debug:
             logger.setLevel(logging.DEBUG)
 
+        self.score_ = None
+        self.rfmodel = None
+        self.stat_ = None
+        self.fsorter_ = None
+        self._relevance_classes = None
+        self.support_ = None
+
     def _get_support_mask(self):
         """
         Returns
@@ -88,7 +95,7 @@ class Main(BaseEstimator):
             fpr=self.fpr,
             random_state=self.random_state,
             check_importances=True,
-            debug=self.debug
+            debug=self.debug,
         )
         minimalsubset = self.rfmodel.fset(self.stat_)
         minimalsubset = np.where(minimalsubset)
@@ -97,10 +104,12 @@ class Main(BaseEstimator):
         logger.debug(f"Features from Boruta: {AR}")
         logger.debug(f"Features from RF: {MR}")
         if len(AR) < 1:
-            raise Exception("No features were selected in AR model. Is model properly fit? (score ok?)")
+            raise Exception(
+                "No features were selected in AR model. Is model properly fit? (score ok?)"
+            )
 
         # Sort features iteratively into strongly (S) and weakly (W) sets
-        self.fsorter = FeatureSorter(
+        self.fsorter_ = FeatureSorter(
             self.problem_type,
             X,
             y,
@@ -109,13 +118,13 @@ class Main(BaseEstimator):
             self.random_state,
             self.stat_,
             n_jobs=self.n_jobs,
-            debug=self.debug
+            debug=self.debug,
         )
-        self.fsorter.check_each_feature()
+        self.fsorter_.check_each_feature()
 
         # Turn index sets into support vector
         # (2 strong relevant,1 weak relevant, 0 irrelevant)
-        all_rel_support = create_support_AR(d, self.fsorter.S, self.fsorter.W)
+        all_rel_support = create_support_AR(d, self.fsorter_.S, self.fsorter_.W)
         self._relevance_classes = all_rel_support
         logger.info(f"Relevance Classes: {self.relevance_classes_}")
 

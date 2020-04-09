@@ -42,6 +42,7 @@ def test_linear_data_class():
     model.fit(X, y)
     assert len(model.relevance_classes_) == X.shape[1]
 
+
 def test_linear_data_regression():
     X, y = genRegressionData(
         n_features=5, n_strel=1, n_redundant=2, n_samples=200, random_state=1234

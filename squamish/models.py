@@ -9,7 +9,6 @@ from squamish.utils import reduced_data, perm_i_in_X
 logging = logging.getLogger(__name__)
 
 
-
 def get_RF_class(problem_type):
     if problem_type == "classification":
         return lightgbm.LGBMClassifier
@@ -35,7 +34,7 @@ class Model:
         self.estimator.fit(X, y)
         return self
 
-    def score(self, X, y, cv=5):
+    def score(self, X, y):
         return self.estimator.score(X, y)
 
     def importances(self):
@@ -133,9 +132,9 @@ class MyBoruta(Model):
             else:
                 tree_params[name] = val
 
-        Model = get_RF_class(self.problem_type)
+        RfModel = get_RF_class(self.problem_type)
 
-        lm = Model(
+        lm = RfModel(
             random_state=self.random_state.randint(1e6),
             n_jobs=self.n_jobs,
             **tree_params,

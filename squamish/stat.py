@@ -1,8 +1,9 @@
+import logging
+from copy import deepcopy
+
 import numpy as np
 from scipy import stats
 from sklearn.utils import check_random_state
-from copy import deepcopy
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ class Stats:
         fpr=1e-4,
         random_state=None,
         check_importances=True,
-        debug=False
+        debug=False,
     ):
         self.model = deepcopy(model)
         self.X = X

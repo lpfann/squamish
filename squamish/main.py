@@ -4,7 +4,6 @@ from copy import deepcopy
 import numpy as np
 from sklearn.base import BaseEstimator
 from sklearn.exceptions import NotFittedError
-from sklearn.preprocessing import scale
 from sklearn.utils import check_random_state
 
 from squamish.algorithm import FeatureSorter
@@ -64,28 +63,25 @@ class Main(BaseEstimator):
         return self.support_
 
     def fit(self, X, y):
-        X = scale(X)
         n, d = X.shape
 
         # All relevant set using Boruta
-        m = models.MyBoruta(
+        boruta = models.MyBoruta(
             self.problem_type, random_state=self.random_state, n_jobs=self.n_jobs
         ).fit(X, y)
-        # bor_score = m.cvscore(X, y)
-        fset = m.fset(X, y)
-        AR = np.where(fset)[0]
+        boruta_features = boruta.fset()
+        AR = np.where(boruta_features)[0]
 
         # Fit a simple Random Forest to get a minimal feature subset
-        m = models.RF(
+        minimalModel = models.RF(
             self.problem_type, random_state=self.random_state, n_jobs=self.n_jobs
         ).fit(X, y)
-        self.score_ = m.score(X, y)
-        logger.debug(f"RF score {self.score_}")
-        logger.debug(f"importances {m.estimator.feature_importances_}")
-        self.rfmodel = deepcopy(m)
-
+        self.score_ = minimalModel.score(X, y)
+        logger.debug(f"Minimal Model (RF) score {self.score_}")
+        logger.debug(f"importances {minimalModel.estimator.feature_importances_}")
+        self.rfmodel = deepcopy(minimalModel)
         self.stat_ = Stats(
-            m,
+            minimalModel,
             X,
             y,
             n_resampling=self.n_resampling,
@@ -94,9 +90,9 @@ class Main(BaseEstimator):
             check_importances=True,
             debug=self.debug
         )
-        fset = self.rfmodel.fset(X, y, self.stat_)
-        fset = np.where(fset)
-        MR = fset[0]
+        minimalsubset = self.rfmodel.fset(self.stat_)
+        minimalsubset = np.where(minimalsubset)
+        MR = minimalsubset[0]
 
         logger.debug(f"Features from Boruta: {AR}")
         logger.debug(f"Features from RF: {MR}")

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "squamish"
-version = "0.4.1"
+version = "0.5.0"
 description = "Feature Classification Tool"
 authors = ["Lukas Pfannschmidt <lukas@lpfann.me>"]
 license = "Apache-2.0"

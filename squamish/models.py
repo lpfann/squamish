@@ -2,6 +2,7 @@ import logging
 
 import lightgbm
 from boruta import BorutaPy
+from sklearn.base import BaseEstimator
 from sklearn.utils import check_random_state
 
 from squamish.utils import reduced_data, perm_i_in_X
@@ -22,52 +23,37 @@ def get_RF_class(problem_type):
     )
 
 
-class Model:
-    def __init__(self, problem_type, random_state=None, n_jobs=-1):
+class RF(BaseEstimator):
+    def __init__(
+        self,
+        problem_type,
+        max_depth=5,
+        feature_fraction=0.8,
+        random_state=None,
+        n_jobs=-1,
+        **params,
+    ):
         self.problem_type = problem_type
         self.random_state = check_random_state(random_state)
         self.n_jobs = n_jobs
-        self.estimator = None
         self.fset_ = None
-
-    def fit(self, X, y):
-        self.estimator.fit(X, y)
-        return self
-
-    def score(self, X, y):
-        return self.estimator.score(X, y)
-
-    def importances(self):
-        if hasattr(self.estimator, "feature_importances_"):
-            return self.estimator.feature_importances_
-        else:
-            raise Exception("no importances, no model fitted yet?")
-
-
-class RF(Model):
-    BEST_PARAMS = {
-        "num_leaves": 32,
-        "max_depth": 5,
-        "boosting_type": "rf",
-        "bagging_fraction": 0.632,
-        "bagging_freq": 1,
-        "feature_fraction": 0.8,
-        "subsample": None,
-        "subsample_freq": None,
-        "colsample_bytree": None,
-        "importance_type": "gain",
-        "verbose": -1,
-    }
-
-    def __init__(self, problem_type, random_state=None, n_jobs=-1, **params):
-        super().__init__(problem_type, random_state, n_jobs)
-
-        if params is None or len(params) == 0:
-            params = self.BEST_PARAMS
-
+        num_leaves = 2 ** max_depth
         model = get_RF_class(self.problem_type)
         self.estimator = model(
-            random_state=self.random_state.randint(1e6), n_jobs=self.n_jobs, **params
+            boosting_type="rf",
+            max_depth=max_depth,
+            num_leaves=num_leaves,
+            feature_fraction=feature_fraction,
+            random_state=self.random_state.randint(1e6),
+            n_jobs=self.n_jobs,
+            bagging_fraction=0.632,
+            bagging_freq=1,
+            subsample=None,
+            subsample_freq=None,
+            verbose=-1,
+            colsample_bytree=None,
+            importance_type="gain",
+            **params,
         )
         self.fset_ = None
 
@@ -96,51 +82,72 @@ class RF(Model):
     def predict(self, X):
         return self.estimator.predict(X)
 
+    def fit(self, X, y):
+        self.estimator.fit(X, y)
+        return self
 
-class MyBoruta(Model):
-    BEST_PARAMS_BORUTA = {
-        "num_leaves": 32,
-        "max_depth": 5,
-        "boosting_type": "rf",
-        "bagging_fraction": 0.632,
-        "bagging_freq": 1,
-        "feature_fraction": 0.1,  # We force low feature fraction to reduce overshadowing of better redundant features
-        "b_perc": 100,
-        "subsample": None,
-        "subsample_freq": None,
-        "verbose": -1,
-        "colsample_bytree": None,
-        "b_n_estimators": "auto",
-        "b_alpha": 0.01,
-        "b_max_iter": 100,
-        "importance_type": "gain",
-    }
+    def score(self, X, y):
+        return self.estimator.score(X, y)
 
-    def __init__(self, problem_type, random_state=None, n_jobs=-1, **params):
-        super().__init__(problem_type, random_state, n_jobs)
+    def importances(self):
+        if hasattr(self.estimator, "feature_importances_"):
+            return self.estimator.feature_importances_
+        else:
+            raise Exception("no importances, no model fitted yet?")
 
-        tree_params = {
-            k: v for k, v in self.BEST_PARAMS_BORUTA.items() if not k.startswith("b_")
-        }
-        boruta_params = {
-            k[2:]: v for k, v in self.BEST_PARAMS_BORUTA.items() if k.startswith("b_")
-        }
 
-        for name, val in params.items():
-            if name.startswith("b_"):
-                boruta_params[name] = val
-            else:
-                tree_params[name] = val
+class MyBoruta(BaseEstimator):
+    def __init__(
+        self,
+        problem_type,
+        random_state=None,
+        n_jobs=-1,
+        feature_fraction=0.1,
+        max_depth=5,
+        perc=70,
+        n_estimators="auto",
+        alpha=0.01,
+        max_iter=100,
+        **params,
+    ):
+        self.problem_type = problem_type
+        self.random_state = check_random_state(random_state)
+        self.n_jobs = n_jobs
+        self.fset_ = None
+        self.feature_fraction = feature_fraction
+        self.max_depth = max_depth
+        self.perc = perc
+        self.n_estimators = n_estimators
+        self.alpha = alpha
+        self.max_iter = max_iter
 
+        num_leaves = 2 ** max_depth
         RfModel = get_RF_class(self.problem_type)
-
-        lm = RfModel(
+        rfmodel = RfModel(
             random_state=self.random_state.randint(1e6),
             n_jobs=self.n_jobs,
-            **tree_params,
+            boosting_type="rf",
+            max_depth=max_depth,
+            num_leaves=num_leaves,
+            feature_fraction=feature_fraction,
+            bagging_fraction=0.632,
+            bagging_freq=1,
+            subsample=None,
+            subsample_freq=None,
+            verbose=-1,
+            colsample_bytree=None,
+            importance_type="gain",
+            **params,
         )
         self.estimator = BorutaPy(
-            lm, verbose=0, random_state=self.random_state, **boruta_params
+            rfmodel,
+            verbose=0,
+            random_state=self.random_state,
+            perc=perc,
+            n_estimators=n_estimators,
+            alpha=alpha,
+            max_iter=max_iter,
+            **params,
         )
 
     def fset(self):
@@ -148,3 +155,16 @@ class MyBoruta(Model):
             return self.estimator.support_
         else:
             raise Exception("Model has no fset_ yet. Not fitted?")
+
+    def fit(self, X, y):
+        self.estimator.fit(X, y)
+        return self
+
+    def score(self, X, y):
+        return self.estimator.score(X, y)
+
+    def importances(self):
+        if hasattr(self.estimator, "feature_importances_"):
+            return self.estimator.feature_importances_
+        else:
+            raise Exception("no importances, no model fitted yet?")

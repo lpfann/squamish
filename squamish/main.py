@@ -54,6 +54,7 @@ class Main(BaseEstimator):
 
         self.score_ = None
         self.rfmodel = None
+        self.borutamodel = None
         self.stat_ = None
         self.fsorter_ = None
         self._relevance_classes = None
@@ -78,6 +79,7 @@ class Main(BaseEstimator):
         ).fit(X, y)
         boruta_features = boruta.fset()
         AR = np.where(boruta_features)[0]
+        self.borutamodel = boruta
 
         # Fit a simple Random Forest to get a minimal feature subset
         minimalModel = models.RF(

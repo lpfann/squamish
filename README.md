@@ -1,4 +1,4 @@
-<h1 align="center">Welcome to squamish (WIP)</h1>
+<h1 align="center">Welcome to squamish </h1>
 <p>
   <a href="#" target="_blank">
     <img alt="License: Apache 2.0" src="https://img.shields.io/badge/License-Apache_2.0-yellow.svg" />
@@ -27,14 +27,17 @@ poetry install
 poetry run pytest
 ```
 
-## Author
+# Cite
 
-👤 **Lukas Pfannschmidt**
-
-* Website: https://lpfann.me
-* Twitter: [@lpfann](https://twitter.com/lpfann)
-* Github: [@lpfann](https://github.com/lpfann)
-
-
-***
-_This README was generated with ❤️ by [readme-md-generator](https://github.com/kefranabg/readme-md-generator)_
+```bibtex
+@misc{pfannschmidt2020sequential,
+    title={Sequential Feature Classification in the Context of Redundancies},
+    author={Lukas Pfannschmidt and Barbara Hammer},
+    year={2020},
+    eprint={2004.00658},
+    archivePrefix={arXiv},
+    primaryClass={cs.LG}
+}
+```
+Preprints can be found at https://pub.uni-bielefeld.de/record/2942271 or https://arxiv.org/abs/2004.00658.
+Experiments of the papers are located [here](https://github.com/lpfann/squamish_experiments).

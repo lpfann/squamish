@@ -1,10 +1,11 @@
+import logging
+from copy import deepcopy
+
 import numpy as np
 from scipy import stats
 from sklearn.utils import check_random_state
-from copy import deepcopy
-import logging
 
-logging = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def _create_probe_statistic(probe_values, fpr):
@@ -44,6 +45,7 @@ class Stats:
         fpr=1e-4,
         random_state=None,
         check_importances=True,
+        debug=False,
     ):
         self.model = deepcopy(model)
         self.X = X
@@ -52,6 +54,9 @@ class Stats:
         self.fpr = fpr
         self.random_state = check_random_state(random_state)
         self.check_importances = check_importances
+        self.debug = debug
+        if debug:
+            logger.setLevel(logging.DEBUG)
 
         samples = self.generate_samples()
 
@@ -66,7 +71,7 @@ class Stats:
             self.shadow_stat = _create_probe_statistic(
                 self.shadow_importance_samples, fpr
             )
-            logging.debug(f"Shadow Bounds:{self.shadow_stat}")
+            logger.debug(f"Shadow Bounds:{self.shadow_stat}")
 
     def generate_samples(self):
 

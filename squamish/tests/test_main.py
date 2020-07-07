@@ -1,11 +1,8 @@
-from unittest import TestCase
-
-from arfs_gen import genClassificationData
-from sklearn.datasets import make_classification
 import pytest
+from arfs_gen import genClassificationData, genRegressionData
+from sklearn.datasets import make_classification
 
 from squamish.main import Main
-import matplotlib as mpl
 
 
 @pytest.fixture
@@ -37,9 +34,19 @@ def test_fit(data, model):
     assert len(model._get_support_mask()) == X.shape[1]
 
 
-def test_linear_data():
+def test_linear_data_class():
     X, y = genClassificationData(
         n_features=5, n_strel=1, n_redundant=2, n_samples=200, random_state=1234
     )
-    model = Main()
+    model = Main(problem_type="classification")
     model.fit(X, y)
+    assert len(model.relevance_classes_) == X.shape[1]
+
+
+def test_linear_data_regression():
+    X, y = genRegressionData(
+        n_features=5, n_strel=1, n_redundant=2, n_samples=200, random_state=1234
+    )
+    model = Main(problem_type="regression")
+    model.fit(X, y)
+    assert len(model.relevance_classes_) == X.shape[1]

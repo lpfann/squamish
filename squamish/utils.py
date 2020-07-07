@@ -4,9 +4,7 @@ from sklearn.model_selection import cross_val_score
 
 
 def get_truth_AR(d, informative, redundant):
-    truth = (
-        [2] * (informative) + [1] * (redundant) + [0] * (d - (informative + redundant))
-    )
+    truth = [2] * informative + [1] * redundant + [0] * (d - (informative + redundant))
     return truth
 
 

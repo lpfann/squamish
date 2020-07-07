@@ -123,13 +123,13 @@ class Main(BaseEstimator):
             debug=self.debug,
         )
         self.fsorter_.check_each_feature()
+        self.relations_ = self.fsorter_.related
 
         # Turn index sets into support vector
         # (2 strong relevant,1 weak relevant, 0 irrelevant)
         all_rel_support = create_support_AR(d, self.fsorter_.S, self.fsorter_.W)
         self._relevance_classes = all_rel_support
         logger.info(f"Relevance Classes: {self.relevance_classes_}")
-
         # Simple boolean vector where relevan features are regarded as one set (1 relevant, 0 irrelevant)
         self.support_ = self._relevance_classes > 0
 

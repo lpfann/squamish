@@ -64,7 +64,8 @@ class Stats:
         self.score_stat = _create_probe_statistic(scores, fpr)
         if check_importances:
             imps = np.array([sc[1] for sc in samples]).T
-            # Iterate over columns of matrix, column corresponds to all samples for 1 feature
+            # Iterate over columns of matrix, 
+            # column corresponds to all samples for 1 feature
             self.imp_stat = [_create_probe_statistic(col, fpr) for col in imps]
 
             self.shadow_importance_samples = [sc[2] for sc in samples]

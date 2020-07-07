@@ -94,14 +94,13 @@ class FeatureSorter:
 
     def check_each_feature(self):
         self.related = {}
-        self.synergies = {}
 
         if len(self.MR_and_W) == 1:
             # Only one feature, which should be str. relevant
             self.S = self.MR
             logger.debug("Only one feature")
             return
-        self.debug_f_imps = {}
+
         for f in self.MR:
             logger.debug(f"------------------- Feature f:{f}")
 
@@ -124,12 +123,10 @@ class FeatureSorter:
                 ids_and_importances = list(zip(fset_without_f, self.model.importances()))
                 relatives = self.features_with_significant_change(ids_and_importances)
                 self.related[f] = relatives
-                self.debug_f_imps[f] = ids_and_importances
 
 
-        self.related = filter_strongly(self.related, self.S)
+        #self.related = filter_strongly(self.related, self.S)
         logger.debug(f"Related: {self.related}")
-        # print("Synergies:", self.synergies)
         logger.debug(f"S: {self.S}")
         logger.debug(f"W: {self.W}")
 
